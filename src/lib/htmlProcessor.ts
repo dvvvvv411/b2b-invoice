@@ -50,7 +50,7 @@ export const processHTMLWithFooters = (options: ProcessHTMLOptions): ProcessedHT
     // Remove any existing fixed footers (they don't work in html2pdf)
     const existingFooters = doc.querySelectorAll('.pdf-footer');
     existingFooters.forEach(footer => {
-      if (footer.style.position === 'fixed') {
+      if ((footer as HTMLElement).style?.position === 'fixed') {
         footer.remove();
       }
     });

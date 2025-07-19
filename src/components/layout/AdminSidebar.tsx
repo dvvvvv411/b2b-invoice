@@ -1,3 +1,4 @@
+
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
@@ -8,6 +9,7 @@ import {
   Truck,
   Factory,
   FileText,
+  Edit3,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -30,6 +32,7 @@ const menuItems = [
   { title: 'Speditionen', url: '/admin/speditionen', icon: Truck },
   { title: 'Insolvente Unternehmen', url: '/admin/insolvente-unternehmen', icon: Factory },
   { title: 'PDF Generator', url: '/admin/pdf-generator', icon: FileText },
+  { title: 'PDF Editor', url: '/admin/pdf-editor', icon: Edit3 },
 ];
 
 export function AdminSidebar() {

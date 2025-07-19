@@ -1,5 +1,52 @@
+
 // PDF Type definitions
 export type PDFType = 'rechnung' | 'kaufvertrag' | 'uebernahmebestaetigung';
+
+export interface PDFField {
+  key: string;
+  label: string;
+  required: boolean;
+}
+
+export interface PDFSection {
+  id: string;
+  type: 'header' | 'content' | 'footer' | 'address' | 'table';
+  title: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  style: {
+    fontSize: number;
+    fontFamily: string;
+    fontWeight?: string;
+    color?: string;
+    lineHeight?: number;
+  };
+  fields: PDFField[];
+}
+
+export interface PDFTemplate {
+  id: string;
+  name: string;
+  type: PDFType;
+  sections: PDFSection[];
+  styles: {
+    page: {
+      margin: number;
+      fontSize: number;
+      fontFamily: string;
+    };
+    header: {
+      fontSize: number;
+      fontWeight: string;
+      color: string;
+    };
+    content: {
+      fontSize: number;
+      color: string;
+      lineHeight: number;
+    };
+  };
+}
 
 export interface PDFData {
   type: PDFType;

@@ -42,8 +42,135 @@ export function PDFPreview({ pdfData }: PDFPreviewProps) {
   const handleGeneratePDF = async () => {
     setIsGenerating(true);
     try {
+      // Import the enhanced HTML to PDF generator
+      const { generateHTMLToPDF } = await import('@/lib/pdfGenerator');
+      
+      // Create a simple HTML template for the PDF preview
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 20px;
+                    font-size: 12px;
+                    line-height: 1.4;
+                    color: #000;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    padding-bottom: 20px;
+                    border-bottom: 2px solid #333;
+                }
+                .title {
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin-bottom: 10px;
+                    color: #333;
+                }
+                .section {
+                    margin: 20px 0;
+                    padding: 15px;
+                    border: 1px solid #ddd;
+                    background-color: #f9f9f9;
+                }
+                .section h3 {
+                    margin-top: 0;
+                    color: #333;
+                    border-bottom: 1px solid #ddd;
+                    padding-bottom: 5px;
+                }
+                .data-item {
+                    margin: 8px 0;
+                }
+                .label {
+                    font-weight: bold;
+                    color: #555;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="pdf-content">
+                <div class="header">
+                    <div class="title">${getTypeTitle(pdfData.type)}</div>
+                    <p>Erstellt am {{ AKTUELLES_DATUM }}</p>
+                </div>
+                
+                ${pdfData.kanzlei ? `
+                <div class="section">
+                    <h3>Anwaltskanzlei</h3>
+                    <div class="data-item"><span class="label">Name:</span> ${pdfData.kanzlei.name}</div>
+                    <div class="data-item"><span class="label">Adresse:</span> ${pdfData.kanzlei.strasse}</div>
+                    <div class="data-item"><span class="label">Ort:</span> ${pdfData.kanzlei.plz} ${pdfData.kanzlei.stadt}</div>
+                    ${pdfData.kanzlei.email ? `<div class="data-item"><span class="label">E-Mail:</span> ${pdfData.kanzlei.email}</div>` : ''}
+                    ${pdfData.kanzlei.telefon ? `<div class="data-item"><span class="label">Telefon:</span> ${pdfData.kanzlei.telefon}</div>` : ''}
+                </div>
+                ` : ''}
+                
+                ${pdfData.kunde ? `
+                <div class="section">
+                    <h3>Kunde</h3>
+                    <div class="data-item"><span class="label">Name:</span> ${pdfData.kunde.name}</div>
+                    <div class="data-item"><span class="label">Adresse:</span> ${pdfData.kunde.adresse}</div>
+                    <div class="data-item"><span class="label">Ort:</span> ${pdfData.kunde.plz} ${pdfData.kunde.stadt}</div>
+                    ${pdfData.kunde.geschaeftsfuehrer ? `<div class="data-item"><span class="label">Geschäftsführer:</span> ${pdfData.kunde.geschaeftsfuehrer}</div>` : ''}
+                </div>
+                ` : ''}
+                
+                ${pdfData.auto ? `
+                <div class="section">
+                    <h3>Fahrzeug</h3>
+                    <div class="data-item"><span class="label">Fahrzeug:</span> ${pdfData.auto.marke} ${pdfData.auto.modell}</div>
+                    ${pdfData.auto.fahrgestell_nr ? `<div class="data-item"><span class="label">Fahrgestellnummer:</span> ${pdfData.auto.fahrgestell_nr}</div>` : ''}
+                    ${pdfData.auto.kilometer ? `<div class="data-item"><span class="label">Kilometer:</span> ${pdfData.auto.kilometer.toLocaleString('de-DE')} km</div>` : ''}
+                    ${pdfData.auto.erstzulassung ? `<div class="data-item"><span class="label">Erstzulassung:</span> ${new Date(pdfData.auto.erstzulassung).toLocaleDateString('de-DE')}</div>` : ''}
+                </div>
+                ` : ''}
+                
+                ${pdfData.bankkonto ? `
+                <div class="section">
+                    <h3>Bankkonto</h3>
+                    <div class="data-item"><span class="label">Kontoname:</span> ${pdfData.bankkonto.kontoname}</div>
+                    <div class="data-item"><span class="label">Kontoinhaber:</span> ${pdfData.bankkonto.kontoinhaber}</div>
+                    <div class="data-item"><span class="label">IBAN:</span> ${pdfData.bankkonto.iban}</div>
+                    <div class="data-item"><span class="label">BIC:</span> ${pdfData.bankkonto.bic}</div>
+                </div>
+                ` : ''}
+                
+                ${pdfData.spedition ? `
+                <div class="section">
+                    <h3>Spedition</h3>
+                    <div class="data-item"><span class="label">Name:</span> ${pdfData.spedition.name}</div>
+                    <div class="data-item"><span class="label">Adresse:</span> ${pdfData.spedition.strasse}</div>
+                    <div class="data-item"><span class="label">Ort:</span> ${pdfData.spedition.plz} ${pdfData.spedition.stadt}</div>
+                </div>
+                ` : ''}
+                
+                ${pdfData.insolventesUnternehmen ? `
+                <div class="section">
+                    <h3>Insolventes Unternehmen</h3>
+                    <div class="data-item"><span class="label">Name:</span> ${pdfData.insolventesUnternehmen.name}</div>
+                    ${pdfData.insolventesUnternehmen.adresse ? `<div class="data-item"><span class="label">Adresse:</span> ${pdfData.insolventesUnternehmen.adresse}</div>` : ''}
+                    <div class="data-item"><span class="label">Amtsgericht:</span> ${pdfData.insolventesUnternehmen.amtsgericht}</div>
+                    <div class="data-item"><span class="label">Aktenzeichen:</span> ${pdfData.insolventesUnternehmen.aktenzeichen}</div>
+                </div>
+                ` : ''}
+            </div>
+            
+            <!-- Enhanced footer that will be processed -->
+            <div class="pdf-footer">
+                PDF erstellt am {{ AKTUELLES_DATUM }} | Dokumenttyp: ${getTypeTitle(pdfData.type)}
+                ${pdfData.kanzlei ? ` | ${pdfData.kanzlei.name}` : ''}
+            </div>
+        </body>
+        </html>
+      `;
+      
       const filename = `${pdfData.type}_${new Date().toISOString().split('T')[0]}.pdf`;
-      await downloadPDF(pdfData, filename);
+      await generateHTMLToPDF(htmlContent, filename);
       
       toast({
         title: 'PDF erstellt',
@@ -177,7 +304,7 @@ export function PDFPreview({ pdfData }: PDFPreviewProps) {
           PDF Vorschau & Generierung
         </h2>
         <p className="text-muted-foreground">
-          Überprüfen Sie die Daten und generieren Sie Ihr PDF-Dokument
+          Überprüfen Sie die Daten und generieren Sie Ihr PDF-Dokument mit verbesserter Fußzeile
         </p>
       </div>
 
@@ -266,7 +393,7 @@ export function PDFPreview({ pdfData }: PDFPreviewProps) {
         </div>
         
         <p className="text-xs text-muted-foreground text-center mt-3">
-          Das PDF wird direkt in Ihren Downloads-Ordner gespeichert
+          Das PDF wird mit verbesserter Fußzeilen-Unterstützung erstellt
         </p>
       </Card>
     </div>

@@ -1,4 +1,3 @@
-
 // PDF Type definitions
 export type PDFType = 'rechnung' | 'kaufvertrag' | 'uebernahmebestaetigung';
 
@@ -29,106 +28,36 @@ export const germanCurrencyFormat = (amount: number): string => {
   }).format(amount);
 };
 
-// HTML to PDF conversion function
+// Enhanced HTML to PDF conversion function with footer support
 export const generateHTMLToPDF = async (htmlContent: string, filename?: string): Promise<void> => {
   try {
-    // Dynamically import html2pdf
+    // Dynamically import html2pdf and our HTML processor
     const html2pdf = (await import('html2pdf.js')).default;
+    const { processHTMLWithFooters } = await import('./htmlProcessor');
     
-    // Create a temporary container for the HTML content
+    // Process the HTML content to add proper footers
+    const { processedContent } = processHTMLWithFooters({
+      content: htmlContent,
+      pageHeight: 1123, // A4 height in pixels at 96 DPI
+      pageWidth: 794     // A4 width in pixels at 96 DPI
+    });
+    
+    // Create a temporary container for the processed HTML content
     const element = document.createElement('div');
-    element.innerHTML = htmlContent;
+    element.innerHTML = processedContent;
     
-    // Add CSS for proper PDF formatting including footer support
-    const style = document.createElement('style');
-    style.textContent = `
-      /* PDF-specific styles */
-      @media print {
-        body {
-          margin: 0;
-          padding: 0;
-          font-family: Arial, sans-serif;
-          font-size: 12px;
-          line-height: 1.4;
-          color: #000;
-        }
-        
-        /* Page break utilities */
-        .page-break-before {
-          page-break-before: always;
-        }
-        
-        .page-break-after {
-          page-break-after: always;
-        }
-        
-        .page-break-inside-avoid {
-          page-break-inside: avoid;
-        }
-        
-        /* Footer styling */
-        .pdf-footer {
-          position: fixed;
-          bottom: 20px;
-          left: 0;
-          right: 0;
-          text-align: center;
-          font-size: 10px;
-          color: #666;
-          border-top: 1px solid #ddd;
-          padding-top: 10px;
-          background: white;
-        }
-        
-        /* Main content margin to avoid footer overlap */
-        .pdf-content {
-          margin-bottom: 80px;
-        }
-        
-        /* Table styling for better PDF rendering */
-        table {
-          border-collapse: collapse;
-          width: 100%;
-          margin: 10px 0;
-        }
-        
-        th, td {
-          border: 1px solid #ddd;
-          padding: 8px;
-          text-align: left;
-        }
-        
-        th {
-          background-color: #f5f5f5;
-          font-weight: bold;
-        }
-        
-        /* Prevent orphans and widows */
-        p, div {
-          orphans: 3;
-          widows: 3;
-        }
-        
-        /* Image handling */
-        img {
-          max-width: 100%;
-          height: auto;
-        }
-      }
-    `;
-    
-    element.appendChild(style);
-    
-    // Configure html2pdf options
+    // Configure html2pdf options with enhanced settings
     const options = {
-      margin: [20, 15, 25, 15], // top, left, bottom, right in mm
+      margin: [15, 10, 15, 10], // top, left, bottom, right in mm - reduced bottom margin since we handle footer
       filename: filename || `document_${new Date().toISOString().split('T')[0]}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2,
         useCORS: true,
         letterRendering: true,
-        allowTaint: false
+        allowTaint: false,
+        logging: false,
+        removeContainer: true
       },
       jsPDF: { 
         unit: 'mm', 
@@ -139,7 +68,7 @@ export const generateHTMLToPDF = async (htmlContent: string, filename?: string):
       pagebreak: { 
         mode: ['avoid-all', 'css', 'legacy'],
         before: '.page-break-before',
-        after: '.page-break-after',
+        after: '.page-break-after, .pdf-page',
         avoid: '.page-break-inside-avoid'
       }
     };
@@ -147,7 +76,7 @@ export const generateHTMLToPDF = async (htmlContent: string, filename?: string):
     // Generate and download the PDF
     await html2pdf().set(options).from(element).save();
     
-    console.log('PDF generated successfully');
+    console.log('PDF generated successfully with enhanced footer support');
     
   } catch (error) {
     console.error('HTML to PDF conversion failed:', error);

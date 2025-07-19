@@ -26,9 +26,11 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 40px;
+            margin: 0;
+            padding: 20px;
             font-size: 12px;
             line-height: 1.4;
+            color: #000;
         }
         .header {
             text-align: center;
@@ -38,9 +40,16 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
             font-size: 20px;
             font-weight: bold;
             margin-bottom: 20px;
+            color: #333;
         }
         .content {
             margin: 20px 0;
+        }
+        .info-section {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
         }
         table {
             width: 100%;
@@ -49,43 +58,34 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
         }
         th, td {
             border: 1px solid #ddd;
-            padding: 8px;
+            padding: 12px 8px;
             text-align: left;
         }
         th {
             background-color: #f5f5f5;
+            font-weight: bold;
         }
-        
-        /* PDF Footer - will appear on each page */
-        .pdf-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            text-align: center;
-            font-size: 10px;
-            color: #666;
-            border-top: 1px solid #ddd;
-            padding: 10px;
-            background: white;
+        .summary {
+            text-align: right;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
         }
-        
-        /* Main content with footer space */
-        .pdf-content {
-            margin-bottom: 60px;
-        }
-        
-        /* Page break utilities */
         .page-break-before {
             page-break-before: always;
         }
-        
-        .page-break-after {
-            page-break-after: always;
+        .signature-section {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
         }
-        
-        .page-break-inside-avoid {
-            page-break-inside: avoid;
+        .signature-box {
+            width: 40%;
+            border-top: 1px solid #333;
+            padding-top: 5px;
+            text-align: center;
+            font-size: 10px;
         }
     </style>
 </head>
@@ -93,48 +93,85 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
     <div class="pdf-content">
         <div class="header">
             <div class="title">Rechnung</div>
-            <p>Rechnungsnummer: 2024-001</p>
-            <p>Datum: {{ AKTUELLES_DATUM }}</p>
+            <p><strong>Rechnungsnummer:</strong> 2024-001</p>
+            <p><strong>Datum:</strong> {{ AKTUELLES_DATUM }}</p>
+        </div>
+        
+        <div class="info-section">
+            <h3>Rechnungsempfänger</h3>
+            <p><strong>{{ KUNDE_NAME }}</strong><br>
+            {{ KUNDE_ADRESSE }}<br>
+            {{ KUNDE_PLZ }} {{ KUNDE_STADT }}</p>
         </div>
         
         <div class="content">
-            <h3>Rechnungsdetails</h3>
+            <h3>Leistungen</h3>
             <table>
                 <thead>
                     <tr>
-                        <th>Position</th>
-                        <th>Beschreibung</th>
-                        <th>Menge</th>
-                        <th>Preis</th>
-                        <th>Gesamt</th>
+                        <th style="width: 8%">Pos.</th>
+                        <th style="width: 50%">Beschreibung</th>
+                        <th style="width: 10%">Menge</th>
+                        <th style="width: 16%">Einzelpreis</th>
+                        <th style="width: 16%">Gesamtpreis</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td>1</td>
-                        <td>Beispielprodukt</td>
+                        <td>Rechtsberatung Fahrzeugkauf</td>
                         <td>1</td>
-                        <td>100,00 €</td>
-                        <td>100,00 €</td>
+                        <td style="text-align: right">150,00 €</td>
+                        <td style="text-align: right">150,00 €</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Vertragsprüfung und -erstellung</td>
+                        <td>1</td>
+                        <td style="text-align: right">200,00 €</td>
+                        <td style="text-align: right">200,00 €</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Abwicklung Fahrzeugübernahme</td>
+                        <td>1</td>
+                        <td style="text-align: right">100,00 €</td>
+                        <td style="text-align: right">100,00 €</td>
                     </tr>
                 </tbody>
             </table>
             
-            <div style="text-align: right; margin-top: 20px;" class="page-break-inside-avoid">
-                <strong>Gesamtsumme: 100,00 €</strong>
+            <div class="summary">
+                <p><strong>Nettobetrag:</strong> 450,00 €</p>
+                <p><strong>MwSt. (19%):</strong> 85,50 €</p>
+                <p style="font-size: 14px; margin-top: 10px;"><strong>Gesamtbetrag:</strong> 535,50 €</p>
+            </div>
+            
+            <div class="info-section" style="margin-top: 30px;">
+                <h4>Zahlungshinweise</h4>
+                <p>Bitte überweisen Sie den Rechnungsbetrag innerhalb von 14 Tagen auf folgendes Konto:</p>
+                <p><strong>{{ BANKKONTO_KONTONAME }}</strong><br>
+                IBAN: {{ BANKKONTO_IBAN }}<br>
+                BIC: {{ BANKKONTO_BIC }}<br>
+                Verwendungszweck: Rechnung 2024-001</p>
             </div>
         </div>
         
-        <!-- Example of content that should break to new page -->
-        <div class="page-break-before">
-            <h3>Zusätzliche Informationen</h3>
-            <p>Dieser Bereich würde auf einer neuen Seite beginnen.</p>
+        <div class="signature-section page-break-inside-avoid">
+            <div class="signature-box">
+                <div>Datum, Unterschrift Auftraggeber</div>
+            </div>
+            <div class="signature-box">
+                <div>Datum, Unterschrift {{ KANZLEI_NAME }}</div>
+            </div>
         </div>
     </div>
     
-    <!-- Footer will appear on each page -->
+    <!-- This footer will be processed by our HTML processor -->
     <div class="pdf-footer">
-        Erstellt am {{ AKTUELLES_DATUM }} | Seite <span class="pageNumber"></span> von <span class="totalPages"></span>
+        {{ KANZLEI_NAME }} | {{ KANZLEI_STRASSE }}, {{ KANZLEI_PLZ }} {{ KANZLEI_STADT }} | 
+        Tel: {{ KANZLEI_TELEFON }} | E-Mail: {{ KANZLEI_EMAIL }} | 
+        Erstellt am {{ AKTUELLES_DATUM }}
     </div>
 </body>
 </html>`;

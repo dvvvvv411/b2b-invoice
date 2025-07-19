@@ -36,8 +36,7 @@ export const generatePDF = async (data: PDFData): Promise<Blob> => {
     // Import the specific template based on PDF type
     if (data.type === 'rechnung') {
       const { RechnungPDF } = await import('./templates/RechnungPDF');
-      const { createElement } = await import('react');
-      return pdf(createElement(RechnungPDF, { data })).toBlob();
+      return pdf(RechnungPDF({ data })).toBlob();
     }
     
     // Fallback for other types - create a simple text document

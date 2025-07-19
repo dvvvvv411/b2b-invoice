@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  Eye, 
   Download, 
   FileText, 
   Building2, 
@@ -17,6 +16,7 @@ import {
 } from 'lucide-react';
 import { PDFData, downloadPDF } from '@/lib/pdfGenerator';
 import { useToast } from '@/hooks/use-toast';
+import { PDFPreviewDialog } from './PDFPreviewDialog';
 
 interface PDFPreviewProps {
   pdfData: PDFData;
@@ -249,14 +249,7 @@ export function PDFPreview({ pdfData }: PDFPreviewProps) {
       {/* Actions */}
       <Card className="glass border-primary/20 p-6">
         <div className="flex flex-col sm:flex-row gap-4">
-          <Button
-            variant="outline"
-            className="flex-1 flex items-center justify-center space-x-2"
-            disabled={true} // Preview not implemented yet
-          >
-            <Eye className="w-4 h-4" />
-            <span>Vorschau anzeigen</span>
-          </Button>
+          <PDFPreviewDialog pdfData={pdfData} disabled={!pdfData} />
           
           <Button
             variant="gaming"

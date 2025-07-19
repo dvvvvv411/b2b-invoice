@@ -17,6 +17,7 @@ import { useSpeditionen } from '@/hooks/useSpeditionen';
 import DataSelectionCard, { SelectedData } from '@/components/pdf-templates/DataSelectionCard';
 import { replaceTemplateData, TemplateData } from '@/utils/templateDataReplacer';
 import { replacePlaceholdersWithRealData, SelectedData as LivePreviewData } from '@/utils/livePreviewReplacer';
+import { generateHTMLToPDF } from '@/lib/pdfGenerator';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -54,41 +55,86 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
         th {
             background-color: #f5f5f5;
         }
+        
+        /* PDF Footer - will appear on each page */
+        .pdf-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding: 10px;
+            background: white;
+        }
+        
+        /* Main content with footer space */
+        .pdf-content {
+            margin-bottom: 60px;
+        }
+        
+        /* Page break utilities */
+        .page-break-before {
+            page-break-before: always;
+        }
+        
+        .page-break-after {
+            page-break-after: always;
+        }
+        
+        .page-break-inside-avoid {
+            page-break-inside: avoid;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="title">Rechnung</div>
-        <p>Rechnungsnummer: 2024-001</p>
-        <p>Datum: {{ current_date }}</p>
+    <div class="pdf-content">
+        <div class="header">
+            <div class="title">Rechnung</div>
+            <p>Rechnungsnummer: 2024-001</p>
+            <p>Datum: {{ AKTUELLES_DATUM }}</p>
+        </div>
+        
+        <div class="content">
+            <h3>Rechnungsdetails</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Position</th>
+                        <th>Beschreibung</th>
+                        <th>Menge</th>
+                        <th>Preis</th>
+                        <th>Gesamt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Beispielprodukt</td>
+                        <td>1</td>
+                        <td>100,00 €</td>
+                        <td>100,00 €</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="text-align: right; margin-top: 20px;" class="page-break-inside-avoid">
+                <strong>Gesamtsumme: 100,00 €</strong>
+            </div>
+        </div>
+        
+        <!-- Example of content that should break to new page -->
+        <div class="page-break-before">
+            <h3>Zusätzliche Informationen</h3>
+            <p>Dieser Bereich würde auf einer neuen Seite beginnen.</p>
+        </div>
     </div>
     
-    <div class="content">
-        <h3>Rechnungsdetails</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Position</th>
-                    <th>Beschreibung</th>
-                    <th>Menge</th>
-                    <th>Preis</th>
-                    <th>Gesamt</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>1</td>
-                    <td>Beispielprodukt</td>
-                    <td>1</td>
-                    <td>100,00 €</td>
-                    <td>100,00 €</td>
-                </tr>
-            </tbody>
-        </table>
-        
-        <div style="text-align: right; margin-top: 20px;">
-            <strong>Gesamtsumme: 100,00 €</strong>
-        </div>
+    <!-- Footer will appear on each page -->
+    <div class="pdf-footer">
+        Erstellt am {{ AKTUELLES_DATUM }} | Seite <span class="pageNumber"></span> von <span class="totalPages"></span>
     </div>
 </body>
 </html>`;
@@ -187,12 +233,79 @@ export default function PDFTemplates() {
     }
   };
 
-  const handleDownloadPDF = () => {
-    // TODO: Implement PDF generation and download
-    toast({
-      title: "PDF wird generiert",
-      description: "Das PDF wird heruntergeladen...",
-    });
+  const handleDownloadPDF = async () => {
+    try {
+      // Get the processed HTML content from the live preview
+      let processedContent = htmlContent;
+
+      // Apply the same data replacement logic as in the preview
+      if (selectedData.useRealData) {
+        const livePreviewData: LivePreviewData = {};
+
+        if (selectedData.kanzlei) {
+          livePreviewData.kanzlei = kanzleien.find(k => k.id === selectedData.kanzlei);
+        }
+        if (selectedData.insolventesUnternehmen) {
+          livePreviewData.insolventes = insolventeUnternehmen.find(u => u.id === selectedData.insolventesUnternehmen);
+        }
+        if (selectedData.kunde) {
+          livePreviewData.kunde = kunden.find(k => k.id === selectedData.kunde);
+        }
+        if (selectedData.auto) {
+          livePreviewData.auto = autos.find(a => a.id === selectedData.auto);
+        }
+        if (selectedData.bankkonto) {
+          livePreviewData.bankkonto = bankkonten.find(b => b.id === selectedData.bankkonto);
+        }
+        if (selectedData.spedition) {
+          livePreviewData.spedition = speditionen.find(s => s.id === selectedData.spedition);
+        }
+
+        processedContent = replacePlaceholdersWithRealData(processedContent, livePreviewData);
+      } else {
+        const templateData: TemplateData = {};
+
+        if (selectedData.kanzlei) {
+          templateData.kanzlei = kanzleien.find(k => k.id === selectedData.kanzlei);
+        }
+        if (selectedData.insolventesUnternehmen) {
+          templateData.insolventesUnternehmen = insolventeUnternehmen.find(u => u.id === selectedData.insolventesUnternehmen);
+        }
+        if (selectedData.kunde) {
+          templateData.kunde = kunden.find(k => k.id === selectedData.kunde);
+        }
+        if (selectedData.auto) {
+          templateData.auto = autos.find(a => a.id === selectedData.auto);
+        }
+        if (selectedData.bankkonto) {
+          templateData.bankkonto = bankkonten.find(b => b.id === selectedData.bankkonto);
+        }
+        if (selectedData.spedition) {
+          templateData.spedition = speditionen.find(s => s.id === selectedData.spedition);
+        }
+
+        processedContent = replaceTemplateData(processedContent, templateData);
+      }
+
+      // Generate filename
+      const filename = `${templateName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // Generate PDF from HTML
+      await generateHTMLToPDF(processedContent, filename);
+
+      toast({
+        title: "PDF erfolgreich erstellt",
+        description: `Das PDF "${filename}" wurde heruntergeladen.`,
+      });
+
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        title: "Fehler beim PDF-Export",
+        description: "Das PDF konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleNewTemplate = () => {

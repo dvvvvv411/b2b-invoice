@@ -109,6 +109,17 @@ const GamingLanding = () => {
                 Demo ansehen
               </Button>
             </div>
+
+            <div className="mt-8">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="text-lg px-8 py-4"
+                onClick={() => window.location.href = '/auth'}
+              >
+                Anmelden
+              </Button>
+            </div>
           </div>
 
           {/* Features Grid */}

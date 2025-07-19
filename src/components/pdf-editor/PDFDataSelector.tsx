@@ -109,7 +109,7 @@ export function PDFDataSelector({ currentData, onChange }: PDFDataSelectorProps)
         <p className="text-xs text-muted-foreground">
           Wählen Sie die Daten aus, die in Ihrem PDF-Dokument verwendet werden sollen.
         </p>
-      </div>
+      </Card>
 
       {/* Data Selection Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>

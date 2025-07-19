@@ -28,11 +28,15 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
     try {
       // Extract components like the PDF generator does
       const baseStyles = content.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
-      const footerContent = content.match(/<div class="pdf-footer">[\s\S]*?<\/div>/i)?.[0] || '';
+      
+      // Extract footer content properly - get the inner content without the wrapper div
+      const footerMatch = content.match(/<div class="pdf-footer"[^>]*>([\s\S]*?)<\/div>/i);
+      const footerContent = footerMatch ? footerMatch[1] : '';
+      
       const mainContent = content
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
         .replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '')
-        .replace(/<div class="pdf-footer">[\s\S]*?<\/div>/gi, '');
+        .replace(/<div class="pdf-footer"[^>]*>[\s\S]*?<\/div>/gi, '');
 
       // Create a temporary iframe to measure content height
       const tempIframe = document.createElement('iframe');
@@ -123,7 +127,7 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
     }
   }, []);
 
-  // Helper function to create single page HTML
+  // Helper function to create single page HTML with proper footer
   const createSinglePageHTML = (originalContent: string, baseStyles: string, mainContent: string, footerContent: string, pageNum: number, totalPages: number): string => {
     return `
       <!DOCTYPE html>
@@ -174,14 +178,14 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
           ${mainContent}
         </div>
         <div class="pdf-footer">
-          ${footerContent.replace(/<\/?div[^>]*>/gi, '')} | Seite ${pageNum} von ${totalPages}
+          ${footerContent} | Seite ${pageNum} von ${totalPages}
         </div>
       </body>
       </html>
     `;
   };
 
-  // Helper function to create multi-page HTML
+  // Helper function to create multi-page HTML with proper footer
   const createMultiPageHTML = (baseStyles: string, mainContent: string, footerContent: string, pageIndex: number, totalPages: number, availablePageHeight: number): string => {
     return `
       <!DOCTYPE html>
@@ -233,7 +237,7 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
           ${mainContent}
         </div>
         <div class="pdf-footer">
-          ${footerContent.replace(/<\/?div[^>]*>/gi, '')} | Seite ${pageIndex + 1} von ${totalPages}
+          ${footerContent} | Seite ${pageIndex + 1} von ${totalPages}
         </div>
       </body>
       </html>

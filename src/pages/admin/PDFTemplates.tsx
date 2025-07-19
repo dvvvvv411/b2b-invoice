@@ -358,11 +358,31 @@ export default function PDFTemplates() {
   useEffect(() => {
     let content = htmlContent;
     
-    // Combine main content with footer
-    const combinedContent = content.replace(
-      /<div class="pdf-footer">[\s\S]*?<\/div>/gi,
-      footerContent
-    );
+    // First, ensure footer is properly integrated into the main content
+    let combinedContent = content;
+    
+    // Check if main content already has a footer
+    const hasExistingFooter = /<div class="pdf-footer">[\s\S]*?<\/div>/i.test(content);
+    
+    if (hasExistingFooter) {
+      // Replace existing footer with the current footer content
+      combinedContent = content.replace(
+        /<div class="pdf-footer">[\s\S]*?<\/div>/gi,
+        footerContent
+      );
+    } else {
+      // Add footer before closing body tag if no footer exists
+      if (content.includes('</body>')) {
+        combinedContent = content.replace(
+          '</body>',
+          `${footerContent}\n</body>`
+        );
+      } else {
+        // If no body tag, append footer at the end
+        combinedContent = content + '\n' + footerContent;
+      }
+    }
+
     content = combinedContent;
 
     // Check if Live Preview with real data is enabled

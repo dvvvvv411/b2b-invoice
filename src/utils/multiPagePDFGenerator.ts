@@ -51,11 +51,15 @@ export const splitHTMLIntoPages = async (htmlContent: string): Promise<PageConte
 
         const pages: PageContent[] = [];
         const baseStyles = htmlContent.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
-        const footerContent = htmlContent.match(/<div class="pdf-footer">[\s\S]*?<\/div>/i)?.[0] || '';
+        
+        // Extract footer content properly
+        const footerMatch = htmlContent.match(/<div class="pdf-footer"[^>]*>([\s\S]*?)<\/div>/i);
+        const footerContent = footerMatch ? footerMatch[1] : '';
+        
         const mainContent = htmlContent
           .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
           .replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '')
-          .replace(/<div class="pdf-footer">[\s\S]*?<\/div>/gi, '');
+          .replace(/<div class="pdf-footer"[^>]*>[\s\S]*?<\/div>/gi, '');
 
         if (numberOfPages <= 1) {
           // Single page
@@ -90,11 +94,16 @@ export const splitHTMLIntoPages = async (htmlContent: string): Promise<PageConte
                   bottom: 0;
                   left: 0;
                   right: 0;
+                  height: 60px;
                   background: #f5f5f5;
                   padding: 10px;
                   text-align: center;
                   font-size: 10px;
                   border-top: 1px solid #ddd;
+                  box-sizing: border-box;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
                 }
               </style>
             </head>
@@ -102,7 +111,9 @@ export const splitHTMLIntoPages = async (htmlContent: string): Promise<PageConte
               <div class="page-content">
                 ${mainContent}
               </div>
-              ${footerContent} | Seite 1 von 1
+              <div class="pdf-footer">
+                ${footerContent} | Seite 1 von 1
+              </div>
             </body>
             </html>
           `;
@@ -149,11 +160,16 @@ export const splitHTMLIntoPages = async (htmlContent: string): Promise<PageConte
                     bottom: 0;
                     left: 0;
                     right: 0;
+                    height: 60px;
                     background: #f5f5f5;
                     padding: 10px;
                     text-align: center;
                     font-size: 10px;
                     border-top: 1px solid #ddd;
+                    box-sizing: border-box;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                   }
                 </style>
               </head>
@@ -161,7 +177,9 @@ export const splitHTMLIntoPages = async (htmlContent: string): Promise<PageConte
                 <div class="page-content">
                   ${mainContent}
                 </div>
-                ${footerContent} | Seite ${i + 1} von ${numberOfPages}
+                <div class="pdf-footer">
+                  ${footerContent} | Seite ${i + 1} von ${numberOfPages}
+                </div>
               </body>
               </html>
             `;
@@ -243,11 +261,15 @@ export const generateMultiPagePDF = async (htmlContent: string, filename?: strin
 const createOptimizedSingleDocument = (htmlContent: string): string => {
   // Extract components from original HTML
   const baseStyles = htmlContent.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
-  const footerContent = htmlContent.match(/<div class="pdf-footer">[\s\S]*?<\/div>/i)?.[0] || '';
+  
+  // Extract footer content properly - get the inner content without the wrapper div
+  const footerMatch = htmlContent.match(/<div class="pdf-footer"[^>]*>([\s\S]*?)<\/div>/i);
+  const footerContent = footerMatch ? footerMatch[1] : '';
+  
   const mainContent = htmlContent
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '')
-    .replace(/<div class="pdf-footer">[\s\S]*?<\/div>/gi, '');
+    .replace(/<div class="pdf-footer"[^>]*>[\s\S]*?<\/div>/gi, '');
 
   // Create single optimized document with proper CSS for html2pdf
   const optimizedHTML = `
@@ -288,12 +310,17 @@ const createOptimizedSingleDocument = (htmlContent: string): string => {
           bottom: 0;
           left: 0;
           right: 0;
+          height: 60px;
           background: #f5f5f5;
           padding: 10px;
           text-align: center;
           font-size: 10px;
           border-top: 1px solid #ddd;
           page-break-inside: avoid;
+          box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         /* Prevent breaking inside these elements */
@@ -331,7 +358,7 @@ const createOptimizedSingleDocument = (htmlContent: string): string => {
       <div class="pdf-page">
         ${mainContent}
         <div class="pdf-footer">
-          ${footerContent.replace(/<\/?div[^>]*>/gi, '')}
+          ${footerContent}
         </div>
       </div>
     </body>

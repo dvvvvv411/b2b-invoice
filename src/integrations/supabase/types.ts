@@ -14,7 +14,252 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      anwaltskanzleien: {
+        Row: {
+          created_at: string
+          email: string | null
+          fax: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          plz: string | null
+          rechtsanwalt: string | null
+          register_nr: string | null
+          registergericht: string | null
+          stadt: string | null
+          strasse: string | null
+          telefon: string | null
+          updated_at: string
+          user_id: string
+          ust_id: string | null
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          fax?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          plz?: string | null
+          rechtsanwalt?: string | null
+          register_nr?: string | null
+          registergericht?: string | null
+          stadt?: string | null
+          strasse?: string | null
+          telefon?: string | null
+          updated_at?: string
+          user_id: string
+          ust_id?: string | null
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          fax?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          plz?: string | null
+          rechtsanwalt?: string | null
+          register_nr?: string | null
+          registergericht?: string | null
+          stadt?: string | null
+          strasse?: string | null
+          telefon?: string | null
+          updated_at?: string
+          user_id?: string
+          ust_id?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      autos: {
+        Row: {
+          created_at: string
+          dekra_bericht_nr: string | null
+          einzelpreis_netto: number | null
+          erstzulassung: string | null
+          fahrgestell_nr: string | null
+          id: string
+          kilometer: number | null
+          marke: string | null
+          modell: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dekra_bericht_nr?: string | null
+          einzelpreis_netto?: number | null
+          erstzulassung?: string | null
+          fahrgestell_nr?: string | null
+          id?: string
+          kilometer?: number | null
+          marke?: string | null
+          modell?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dekra_bericht_nr?: string | null
+          einzelpreis_netto?: number | null
+          erstzulassung?: string | null
+          fahrgestell_nr?: string | null
+          id?: string
+          kilometer?: number | null
+          marke?: string | null
+          modell?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bankkonten: {
+        Row: {
+          bic: string | null
+          created_at: string
+          iban: string | null
+          id: string
+          kontoinhaber: string | null
+          kontoname: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bic?: string | null
+          created_at?: string
+          iban?: string | null
+          id?: string
+          kontoinhaber?: string | null
+          kontoname?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bic?: string | null
+          created_at?: string
+          iban?: string | null
+          id?: string
+          kontoinhaber?: string | null
+          kontoname?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      insolvente_unternehmen: {
+        Row: {
+          adresse: string | null
+          aktenzeichen: string | null
+          amtsgericht: string | null
+          created_at: string
+          handelsregister: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adresse?: string | null
+          aktenzeichen?: string | null
+          amtsgericht?: string | null
+          created_at?: string
+          handelsregister?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adresse?: string | null
+          aktenzeichen?: string | null
+          amtsgericht?: string | null
+          created_at?: string
+          handelsregister?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      kunden: {
+        Row: {
+          adresse: string | null
+          aktenzeichen: string | null
+          created_at: string
+          geschaeftsfuehrer: string | null
+          id: string
+          kundennummer: string | null
+          name: string
+          plz: string | null
+          stadt: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adresse?: string | null
+          aktenzeichen?: string | null
+          created_at?: string
+          geschaeftsfuehrer?: string | null
+          id?: string
+          kundennummer?: string | null
+          name: string
+          plz?: string | null
+          stadt?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adresse?: string | null
+          aktenzeichen?: string | null
+          created_at?: string
+          geschaeftsfuehrer?: string | null
+          id?: string
+          kundennummer?: string | null
+          name?: string
+          plz?: string | null
+          stadt?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      speditionen: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          plz: string | null
+          stadt: string | null
+          strasse: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          plz?: string | null
+          stadt?: string | null
+          strasse?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          plz?: string | null
+          stadt?: string | null
+          strasse?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

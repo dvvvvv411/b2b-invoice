@@ -1,4 +1,3 @@
-
 import { A4_CONSTANTS } from './pdfConstants';
 import { extractAndProcessContent, measureContentHeight } from './contentProcessor';
 import { generateOptimizedHTML2PDFHTML } from './htmlGenerator';
@@ -10,6 +9,7 @@ export const generateEnhancedMultiPagePDF = async (htmlContent: string, filename
   try {
     console.log('🚀 Starting enhanced multi-page PDF generation');
     console.log('📄 HTML content length:', htmlContent.length);
+    console.log('📄 HTML content preview:', htmlContent.substring(0, 500) + '...');
     
     // Dynamically import html2pdf with better error handling
     let html2pdf;
@@ -33,6 +33,9 @@ export const generateEnhancedMultiPagePDF = async (htmlContent: string, filename
       footerLength: components.footerContent.length
     });
     
+    // Log content preview for debugging
+    console.log('🔍 Main content preview:', components.mainContent.substring(0, 300) + '...');
+    
     if (!components.mainContent.trim()) {
       console.warn('⚠️ No main content found, using original HTML');
       components.mainContent = htmlContent;
@@ -41,6 +44,7 @@ export const generateEnhancedMultiPagePDF = async (htmlContent: string, filename
     // Create optimized HTML document for html2pdf
     const optimizedHTML = generateOptimizedHTML2PDFHTML(components);
     console.log('📋 Optimized HTML length:', optimizedHTML.length);
+    console.log('📋 Optimized HTML preview:', optimizedHTML.substring(0, 500) + '...');
     
     // Create element with improved setup
     tempElement = document.createElement('div');

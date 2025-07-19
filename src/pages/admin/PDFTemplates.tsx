@@ -19,6 +19,7 @@ import { replaceTemplateData, TemplateData } from '@/utils/templateDataReplacer'
 import { replacePlaceholdersWithRealData, SelectedData as LivePreviewData } from '@/utils/livePreviewReplacer';
 import { MultiPagePreview } from '@/components/pdf-templates/MultiPagePreview';
 import { generateEnhancedMultiPagePDF } from '@/utils/enhancedPDFGenerator';
+import { generateDirectPDF } from '@/utils/directPDFGenerator';
 import { integrateFooterIntoContent } from '@/utils/contentProcessor';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
@@ -316,12 +317,13 @@ export default function PDFTemplates() {
       // Generate filename
       const filename = `${templateName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Use the enhanced multi-page PDF generator with proper footer integration
-      await generateEnhancedMultiPagePDF(processedContent, filename);
+      // Use the direct PDF generator with the already processed content
+      // This avoids double processing that was causing empty PDFs
+      await generateDirectPDF(processedContent, filename);
 
       toast({
         title: "PDF erfolgreich erstellt",
-        description: `Das PDF "${filename}" wurde mit korrekter Multi-Seiten-Aufteilung und Fußzeilen heruntergeladen.`,
+        description: `Das PDF "${filename}" wurde erfolgreich heruntergeladen.`,
       });
 
     } catch (error) {

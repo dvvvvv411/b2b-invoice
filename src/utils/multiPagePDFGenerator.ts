@@ -1,8 +1,8 @@
-
 import { A4_CONSTANTS } from './pdfConstants';
 import { extractAndProcessContent, measureContentHeight, ContentComponents } from './contentProcessor';
 import { generateSinglePageHTML, generateMultiPageHTML } from './htmlGenerator';
 import { generateEnhancedMultiPagePDF } from './enhancedPDFGenerator';
+import { generateDirectPDF } from './directPDFGenerator';
 
 export interface PageContent {
   html: string;
@@ -99,8 +99,17 @@ export const generateMultiPagePDF = async (htmlContent: string, filename?: strin
       throw new Error('Kein gültiger HTML-Inhalt zum Generieren des PDFs');
     }
     
-    await generateEnhancedMultiPagePDF(htmlContent, filename);
-    console.log('✅ Multi-page PDF generation completed successfully');
+    // Try direct generation first to avoid double processing
+    try {
+      await generateDirectPDF(htmlContent, filename);
+      console.log('✅ Direct PDF generation completed successfully');
+      return;
+    } catch (directError) {
+      console.warn('⚠️ Direct PDF generation failed, trying enhanced generator:', directError);
+      // Fall back to enhanced generator
+      await generateEnhancedMultiPagePDF(htmlContent, filename);
+      console.log('✅ Enhanced multi-page PDF generation completed successfully');
+    }
     
   } catch (error) {
     console.error('❌ Multi-page PDF generation failed:', error);

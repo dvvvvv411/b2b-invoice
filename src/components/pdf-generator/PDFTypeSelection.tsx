@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, FileContract, FileCheck } from 'lucide-react';
+import { FileText, FileText as FileContract, FileCheck } from 'lucide-react';
 import { PDFType } from '@/lib/pdfGenerator';
 
 interface PDFTypeSelectionProps {

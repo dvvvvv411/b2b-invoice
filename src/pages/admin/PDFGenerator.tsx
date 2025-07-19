@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
-  FileContract, 
+  FileText as FileContract, 
   FileCheck, 
   ChevronRight, 
   ChevronLeft,

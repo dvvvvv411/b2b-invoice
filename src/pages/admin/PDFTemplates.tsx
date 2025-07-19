@@ -8,6 +8,14 @@ import { Download, Save, Plus, ZoomIn, ZoomOut, Trash2 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { toast } from '@/hooks/use-toast';
 import { usePDFTemplates, PDFTemplate } from '@/hooks/usePDFTemplates';
+import { useKanzleien } from '@/hooks/useKanzleien';
+import { useInsolventeUnternehmen } from '@/hooks/useInsolventeUnternehmen';
+import { useKunden } from '@/hooks/useKunden';
+import { useAutos } from '@/hooks/useAutos';
+import { useBankkonten } from '@/hooks/useBankkonten';
+import { useSpeditionen } from '@/hooks/useSpeditionen';
+import DataSelectionCard, { SelectedData } from '@/components/pdf-templates/DataSelectionCard';
+import { replaceTemplateData, TemplateData } from '@/utils/templateDataReplacer';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -99,6 +107,28 @@ export default function PDFTemplates() {
   const previewRef = useRef<HTMLIFrameElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Data selection state
+  const [selectedData, setSelectedData] = useState<SelectedData>(() => {
+    const saved = localStorage.getItem('pdfTemplateSelectedData');
+    return saved ? JSON.parse(saved) : {
+      kanzlei: '',
+      insolventesUnternehmen: '',
+      kunde: '',
+      auto: '',
+      bankkonto: '',
+      spedition: '',
+      useRealData: false
+    };
+  });
+
+  // Data hooks for template replacement
+  const { data: kanzleien = [] } = useKanzleien();
+  const { data: insolventeUnternehmen = [] } = useInsolventeUnternehmen();
+  const { data: kunden = [] } = useKunden();
+  const { data: autos = [] } = useAutos();
+  const { data: bankkonten = [] } = useBankkonten();
+  const { data: speditionen = [] } = useSpeditionen();
+
   // Auto-save functionality
   const scheduleAutoSave = useCallback(() => {
     if (!autoSaveEnabled || isCreatingNew || !currentTemplate) return;
@@ -183,14 +213,48 @@ export default function PDFTemplates() {
     }
   };
 
-  const updatePreview = (content: string) => {
+  const updatePreview = useCallback((content: string) => {
+    let processedContent = content;
+
+    // Replace placeholders with real data if enabled
+    if (selectedData.useRealData) {
+      const templateData: TemplateData = {};
+
+      // Get selected data objects
+      if (selectedData.kanzlei) {
+        templateData.kanzlei = kanzleien.find(k => k.id === selectedData.kanzlei);
+      }
+      if (selectedData.insolventesUnternehmen) {
+        templateData.insolventesUnternehmen = insolventeUnternehmen.find(u => u.id === selectedData.insolventesUnternehmen);
+      }
+      if (selectedData.kunde) {
+        templateData.kunde = kunden.find(k => k.id === selectedData.kunde);
+      }
+      if (selectedData.auto) {
+        templateData.auto = autos.find(a => a.id === selectedData.auto);
+      }
+      if (selectedData.bankkonto) {
+        templateData.bankkonto = bankkonten.find(b => b.id === selectedData.bankkonto);
+      }
+      if (selectedData.spedition) {
+        templateData.spedition = speditionen.find(s => s.id === selectedData.spedition);
+      }
+
+      processedContent = replaceTemplateData(processedContent, templateData);
+    }
+
     if (previewRef.current?.contentDocument) {
       const doc = previewRef.current.contentDocument;
       doc.open();
-      doc.write(content);
+      doc.write(processedContent);
       doc.close();
     }
-  };
+  }, [selectedData, kanzleien, insolventeUnternehmen, kunden, autos, bankkonten, speditionen]);
+
+  // Update preview when selected data changes
+  useEffect(() => {
+    updatePreview(htmlContent);
+  }, [selectedData, htmlContent, updatePreview]);
 
   return (
     <div className="p-6 space-y-6 h-screen overflow-hidden flex flex-col">
@@ -275,6 +339,12 @@ export default function PDFTemplates() {
           </div>
         </div>
       </Card>
+
+      {/* Data Selection Card */}
+      <DataSelectionCard
+        selectedData={selectedData}
+        onDataChange={setSelectedData}
+      />
 
       {/* Main Content - Split Screen */}
       <div className="grid grid-cols-2 gap-6 flex-1 min-h-0">

@@ -58,33 +58,24 @@ export const generateMultiPageHTML = (
   `;
 };
 
-// Generate optimized HTML for html2pdf.js with enhanced structure and debugging
+// Generate optimized HTML for html2pdf.js with proper structure
 export const generateOptimizedHTML2PDFHTML = (components: ContentComponents): string => {
   const { baseStyles, mainContent, footerContent } = components;
   const optimizedCSS = generateHTML2PDFOptimizedCSS(baseStyles);
-  
-  // Add debugging markers
-  const debugInfo = `<!-- PDF Generation Debug Info -->
-  <!-- Content Length: ${mainContent.length} -->
-  <!-- Footer Length: ${footerContent.length} -->
-  <!-- Generated: ${new Date().toISOString()} -->`;
   
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>PDF Document</title>
       <style>${optimizedCSS}</style>
-      ${debugInfo}
     </head>
     <body>
       <div class="pdf-page">
-        <div class="pdf-content">
-          ${mainContent}
+        ${mainContent}
+        <div class="pdf-footer">
+          ${footerContent}
         </div>
-        ${footerContent ? `<div class="pdf-footer">${footerContent}</div>` : ''}
       </div>
     </body>
     </html>

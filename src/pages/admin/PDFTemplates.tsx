@@ -312,54 +312,23 @@ export default function PDFTemplates() {
   };
 
   const handleDownloadPDF = async () => {
-    console.log('=== PDF Download Started ===');
-    console.log('Template name:', templateName);
-    console.log('Processed content length:', processedContent.length);
-    
     try {
-      // Generate filename with better formatting
-      const safeTemplateName = templateName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
-      const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `${safeTemplateName}_${timestamp}.pdf`;
-      
-      console.log('Generated filename:', filename);
+      // Generate filename
+      const filename = `${templateName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Show loading toast
-      toast({
-        title: "PDF wird generiert...",
-        description: "Bitte warten Sie einen Moment.",
-      });
-
-      // Use the enhanced multi-page PDF generator with debugging
+      // Use the enhanced multi-page PDF generator with proper footer integration
       await generateEnhancedMultiPagePDF(processedContent, filename);
 
-      // Success toast
       toast({
         title: "PDF erfolgreich erstellt",
-        description: `Das PDF "${filename}" wurde mit Multi-Seiten-Support und Fußzeilen heruntergeladen.`,
+        description: `Das PDF "${filename}" wurde mit korrekter Multi-Seiten-Aufteilung und Fußzeilen heruntergeladen.`,
       });
 
-      console.log('=== PDF Download Completed Successfully ===');
-
     } catch (error) {
-      console.error('=== PDF Download Failed ===');
-      console.error('Error details:', error);
-      
-      // Determine error type and show appropriate message
-      let errorMessage = "Das PDF konnte nicht erstellt werden.";
-      let errorDescription = "Bitte versuchen Sie es erneut.";
-      
-      if (error.message?.includes('html2pdf')) {
-        errorDescription = "Problem mit der PDF-Bibliothek. Bitte laden Sie die Seite neu und versuchen Sie es erneut.";
-      } else if (error.message?.includes('HTML-Datei')) {
-        errorDescription = error.message;
-      } else if (error.message?.includes('PDF konnte nicht generiert werden')) {
-        errorDescription = error.message;
-      }
-
+      console.error('PDF generation error:', error);
       toast({
-        title: errorMessage,
-        description: errorDescription,
+        title: "Fehler beim PDF-Export",
+        description: "Das PDF konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       });
     }

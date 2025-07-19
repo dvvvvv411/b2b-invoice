@@ -19,6 +19,7 @@ import { replaceTemplateData, TemplateData } from '@/utils/templateDataReplacer'
 import { replacePlaceholdersWithRealData, SelectedData as LivePreviewData } from '@/utils/livePreviewReplacer';
 import { MultiPagePreview } from '@/components/pdf-templates/MultiPagePreview';
 import { generateMultiPagePDF } from '@/utils/multiPagePDFGenerator';
+import { integrateFooterIntoContent } from '@/utils/pdfConstants';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -315,12 +316,12 @@ export default function PDFTemplates() {
       // Generate filename
       const filename = `${templateName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Use the corrected multi-page PDF generator
+      // Use the enhanced multi-page PDF generator with proper footer integration
       await generateMultiPagePDF(processedContent, filename);
 
       toast({
         title: "PDF erfolgreich erstellt",
-        description: `Das PDF "${filename}" wurde mit korrekter Multi-Seiten-Aufteilung heruntergeladen.`,
+        description: `Das PDF "${filename}" wurde mit korrekter Multi-Seiten-Aufteilung und Fußzeilen heruntergeladen.`,
       });
 
     } catch (error) {
@@ -356,38 +357,12 @@ export default function PDFTemplates() {
 
   // Process content when htmlContent, footerContent, or selectedData changes
   useEffect(() => {
-    let content = htmlContent;
-    
-    // First, ensure footer is properly integrated into the main content
-    let combinedContent = content;
-    
-    // Check if main content already has a footer
-    const hasExistingFooter = /<div class="pdf-footer">[\s\S]*?<\/div>/i.test(content);
-    
-    if (hasExistingFooter) {
-      // Replace existing footer with the current footer content
-      combinedContent = content.replace(
-        /<div class="pdf-footer">[\s\S]*?<\/div>/gi,
-        footerContent
-      );
-    } else {
-      // Add footer before closing body tag if no footer exists
-      if (content.includes('</body>')) {
-        combinedContent = content.replace(
-          '</body>',
-          `${footerContent}\n</body>`
-        );
-      } else {
-        // If no body tag, append footer at the end
-        combinedContent = content + '\n' + footerContent;
-      }
-    }
+    // Integrate footer into main content using the new utility
+    let content = integrateFooterIntoContent(htmlContent, footerContent);
 
-    content = combinedContent;
-
-    // Check if Live Preview with real data is enabled
+    // Apply data replacement based on selected mode
     if (selectedData.useRealData) {
-      // Build data object for new live preview replacer
+      // Build data object for live preview replacer
       const livePreviewData: LivePreviewData = {};
 
       // Get selected data objects
@@ -410,10 +385,10 @@ export default function PDFTemplates() {
         livePreviewData.spedition = speditionen.find(s => s.id === selectedData.spedition);
       }
 
-      // Use the enhanced live preview replacer with all new placeholders
+      // Use the enhanced live preview replacer
       content = replacePlaceholdersWithRealData(content, livePreviewData);
     } else {
-      // Standard mode - still replace old style placeholders for backward compatibility
+      // Standard mode - use template data replacer for backward compatibility
       const templateData: TemplateData = {};
 
       if (selectedData.kanzlei) {

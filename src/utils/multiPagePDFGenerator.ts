@@ -1,189 +1,31 @@
 
-/**
- * Enhanced PDF generator that handles multi-page DIN A4 content
- */
-
-const A4_WIDTH = 794; // pixels at 96 DPI
-const A4_HEIGHT = 1123; // pixels at 96 DPI
-
-interface PageContent {
-  html: string;
-  pageNumber: number;
-  totalPages: number;
-}
+import { A4_CONSTANTS, getStandardPageCSS, processFooterContent } from './pdfConstants';
+import { extractContentComponents, measureContentHeight, PageContent } from './pageGenerator';
 
 export const splitHTMLIntoPages = async (htmlContent: string): Promise<PageContent[]> => {
   return new Promise((resolve, reject) => {
     try {
-      // Create a temporary iframe to measure content
-      const tempIframe = document.createElement('iframe');
-      tempIframe.style.position = 'absolute';
-      tempIframe.style.left = '-9999px';
-      tempIframe.style.width = `${A4_WIDTH}px`;
-      tempIframe.style.height = `${A4_HEIGHT * 10}px`;
-      tempIframe.style.border = 'none';
-      document.body.appendChild(tempIframe);
-
-      const doc = tempIframe.contentDocument;
-      if (!doc) {
-        reject(new Error('Cannot access iframe content'));
-        return;
-      }
-
-      doc.open();
-      doc.write(htmlContent);
-      doc.close();
-
-      // Wait for content to render
-      setTimeout(() => {
-        const body = doc.body;
-        if (!body) {
-          reject(new Error('No body content found'));
-          document.body.removeChild(tempIframe);
-          return;
-        }
-
-        const contentHeight = body.scrollHeight;
-        const availablePageHeight = A4_HEIGHT - 120; // Account for margins and footer
-        const numberOfPages = Math.ceil(contentHeight / availablePageHeight);
-
-        console.log('Total content height:', contentHeight, 'Pages needed:', numberOfPages);
+      const components = extractContentComponents(htmlContent);
+      
+      measureContentHeight(components).then((contentHeight) => {
+        const numberOfPages = Math.max(1, Math.ceil(contentHeight / A4_CONSTANTS.AVAILABLE_PAGE_HEIGHT));
+        
+        console.log('PDF Generator - Total content height:', contentHeight, 'Pages needed:', numberOfPages);
 
         const pages: PageContent[] = [];
-        const baseStyles = htmlContent.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
-        
-        // Extract footer content properly
-        const footerMatch = htmlContent.match(/<div class="pdf-footer"[^>]*>([\s\S]*?)<\/div>/i);
-        const footerContent = footerMatch ? footerMatch[1] : '';
-        
-        const mainContent = htmlContent
-          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-          .replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '')
-          .replace(/<div class="pdf-footer"[^>]*>[\s\S]*?<\/div>/gi, '');
 
         if (numberOfPages <= 1) {
           // Single page
-          const pageHtml = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="UTF-8">
-              <style>
-                ${baseStyles}
-                
-                body {
-                  margin: 0;
-                  padding: 0;
-                  width: ${A4_WIDTH}px;
-                  min-height: ${A4_HEIGHT}px;
-                  font-family: Arial, sans-serif;
-                  font-size: 12px;
-                  line-height: 1.4;
-                  color: #000;
-                  position: relative;
-                }
-                
-                .page-content {
-                  padding: 20px;
-                  padding-bottom: 80px;
-                  min-height: ${A4_HEIGHT - 80}px;
-                }
-                
-                .pdf-footer {
-                  position: absolute;
-                  bottom: 0;
-                  left: 0;
-                  right: 0;
-                  height: 60px;
-                  background: #f5f5f5;
-                  padding: 10px;
-                  text-align: center;
-                  font-size: 10px;
-                  border-top: 1px solid #ddd;
-                  box-sizing: border-box;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="page-content">
-                ${mainContent}
-              </div>
-              <div class="pdf-footer">
-                ${footerContent} | Seite 1 von 1
-              </div>
-            </body>
-            </html>
-          `;
-          
+          const pageHtml = createSinglePageForPDF(components, 1, 1);
           pages.push({
             html: pageHtml,
             pageNumber: 1,
             totalPages: 1
           });
         } else {
-          // Multiple pages - split content
+          // Multiple pages
           for (let i = 0; i < numberOfPages; i++) {
-            const pageHtml = `
-              <!DOCTYPE html>
-              <html>
-              <head>
-                <meta charset="UTF-8">
-                <style>
-                  ${baseStyles}
-                  
-                  body {
-                    margin: 0;
-                    padding: 0;
-                    width: ${A4_WIDTH}px;
-                    height: ${A4_HEIGHT}px;
-                    font-family: Arial, sans-serif;
-                    font-size: 12px;
-                    line-height: 1.4;
-                    color: #000;
-                    position: relative;
-                    overflow: hidden;
-                  }
-                  
-                  .page-content {
-                    padding: 20px;
-                    padding-bottom: 80px;
-                    height: ${A4_HEIGHT - 80}px;
-                    overflow: hidden;
-                    transform: translateY(-${i * availablePageHeight}px);
-                  }
-                  
-                  .pdf-footer {
-                    position: absolute;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    height: 60px;
-                    background: #f5f5f5;
-                    padding: 10px;
-                    text-align: center;
-                    font-size: 10px;
-                    border-top: 1px solid #ddd;
-                    box-sizing: border-box;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                  }
-                </style>
-              </head>
-              <body>
-                <div class="page-content">
-                  ${mainContent}
-                </div>
-                <div class="pdf-footer">
-                  ${footerContent} | Seite ${i + 1} von ${numberOfPages}
-                </div>
-              </body>
-              </html>
-            `;
-            
+            const pageHtml = createMultiPageForPDF(components, i, numberOfPages);
             pages.push({
               html: pageHtml,
               pageNumber: i + 1,
@@ -192,14 +34,71 @@ export const splitHTMLIntoPages = async (htmlContent: string): Promise<PageConte
           }
         }
 
-        document.body.removeChild(tempIframe);
         resolve(pages);
-      }, 1000);
+      }).catch(reject);
 
     } catch (error) {
       reject(error);
     }
   });
+};
+
+// Create single page HTML optimized for PDF generation
+const createSinglePageForPDF = (components: any, pageNumber: number, totalPages: number): string => {
+  const standardCSS = getStandardPageCSS(components.baseStyles);
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>${standardCSS}</style>
+    </head>
+    <body>
+      <div class="page-content">
+        ${components.mainContent}
+      </div>
+      <div class="pdf-footer">
+        ${components.footerContent} | Seite ${pageNumber} von ${totalPages}
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+// Create multi-page HTML optimized for PDF generation
+const createMultiPageForPDF = (components: any, pageIndex: number, totalPages: number): string => {
+  const standardCSS = getStandardPageCSS(components.baseStyles);
+  
+  const offsetCSS = `
+    ${standardCSS}
+    
+    .page-content {
+      padding: ${A4_CONSTANTS.MARGIN_TOP}px ${A4_CONSTANTS.MARGIN_RIGHT}px ${A4_CONSTANTS.MARGIN_BOTTOM + A4_CONSTANTS.FOOTER_HEIGHT}px ${A4_CONSTANTS.MARGIN_LEFT}px;
+      height: ${A4_CONSTANTS.CONTENT_HEIGHT}px;
+      overflow: hidden;
+      box-sizing: border-box;
+      transform: translateY(-${pageIndex * A4_CONSTANTS.AVAILABLE_PAGE_HEIGHT}px);
+    }
+  `;
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>${offsetCSS}</style>
+    </head>
+    <body>
+      <div class="page-content">
+        ${components.mainContent}
+      </div>
+      <div class="pdf-footer">
+        ${components.footerContent} | Seite ${pageIndex + 1} von ${totalPages}
+      </div>
+    </body>
+    </html>
+  `;
 };
 
 export const generateMultiPagePDF = async (htmlContent: string, filename?: string): Promise<void> => {
@@ -226,13 +125,13 @@ export const generateMultiPagePDF = async (htmlContent: string, filename?: strin
         letterRendering: true,
         allowTaint: false,
         logging: false,
-        width: A4_WIDTH,
+        width: A4_CONSTANTS.WIDTH,
         scrollX: 0,
         scrollY: 0
       },
       jsPDF: { 
         unit: 'px', 
-        format: [A4_WIDTH, A4_HEIGHT],
+        format: [A4_CONSTANTS.WIDTH, A4_CONSTANTS.HEIGHT],
         orientation: 'portrait',
         compress: true
       },
@@ -257,115 +156,79 @@ export const generateMultiPagePDF = async (htmlContent: string, filename?: strin
   }
 };
 
-// Simplified function to create optimized single document
+// Create optimized single document for html2pdf.js
 const createOptimizedSingleDocument = (htmlContent: string): string => {
-  // Extract components from original HTML
-  const baseStyles = htmlContent.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
+  const components = extractContentComponents(htmlContent);
+  const standardCSS = getStandardPageCSS(components.baseStyles);
   
-  // Extract footer content properly - get the inner content without the wrapper div
-  const footerMatch = htmlContent.match(/<div class="pdf-footer"[^>]*>([\s\S]*?)<\/div>/i);
-  const footerContent = footerMatch ? footerMatch[1] : '';
+  // Enhanced CSS specifically for html2pdf.js
+  const optimizedCSS = `
+    ${standardCSS}
+    
+    /* Optimized CSS for html2pdf.js */
+    .pdf-page {
+      width: ${A4_CONSTANTS.WIDTH}px;
+      min-height: ${A4_CONSTANTS.HEIGHT - 60}px;
+      padding: ${A4_CONSTANTS.MARGIN_TOP}px ${A4_CONSTANTS.MARGIN_RIGHT}px ${A4_CONSTANTS.MARGIN_BOTTOM + A4_CONSTANTS.FOOTER_HEIGHT}px ${A4_CONSTANTS.MARGIN_LEFT}px;
+      box-sizing: border-box;
+      position: relative;
+      page-break-after: always;
+      page-break-inside: avoid;
+    }
+    
+    .pdf-page:last-child {
+      page-break-after: avoid;
+    }
+    
+    .pdf-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: ${A4_CONSTANTS.FOOTER_HEIGHT}px;
+      background: #f5f5f5;
+      padding: ${A4_CONSTANTS.FOOTER_PADDING}px;
+      text-align: center;
+      font-size: 10px;
+      border-top: 1px solid #ddd;
+      page-break-inside: avoid;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Prevent breaking inside these elements */
+    .info-section, 
+    .signature-section, 
+    table,
+    .no-break {
+      page-break-inside: avoid;
+    }
+    
+    /* Force page breaks where needed */
+    .page-break {
+      page-break-before: always;
+    }
+  `;
   
-  const mainContent = htmlContent
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '')
-    .replace(/<div class="pdf-footer"[^>]*>[\s\S]*?<\/div>/gi, '');
-
-  // Create single optimized document with proper CSS for html2pdf
-  const optimizedHTML = `
+  return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <style>
-        ${baseStyles}
-        
-        /* Optimized CSS for html2pdf.js */
-        body {
-          margin: 0;
-          padding: 0;
-          font-family: Arial, sans-serif;
-          font-size: 12px;
-          line-height: 1.4;
-          color: #000;
-          width: ${A4_WIDTH}px;
-        }
-        
-        .pdf-page {
-          width: ${A4_WIDTH}px;
-          min-height: ${A4_HEIGHT - 60}px;
-          padding: 20px;
-          box-sizing: border-box;
-          position: relative;
-          page-break-after: always;
-          page-break-inside: avoid;
-        }
-        
-        .pdf-page:last-child {
-          page-break-after: avoid;
-        }
-        
-        .pdf-footer {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 60px;
-          background: #f5f5f5;
-          padding: 10px;
-          text-align: center;
-          font-size: 10px;
-          border-top: 1px solid #ddd;
-          page-break-inside: avoid;
-          box-sizing: border-box;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        /* Prevent breaking inside these elements */
-        .info-section, 
-        .signature-section, 
-        table,
-        .no-break {
-          page-break-inside: avoid;
-        }
-        
-        /* Table specific rules */
-        table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        
-        th, td {
-          border: 1px solid #ddd;
-          padding: 8px;
-          text-align: left;
-        }
-        
-        th {
-          background-color: #f5f5f5;
-          font-weight: bold;
-        }
-        
-        /* Force page breaks where needed */
-        .page-break {
-          page-break-before: always;
-        }
-      </style>
+      <style>${optimizedCSS}</style>
     </head>
     <body>
       <div class="pdf-page">
-        ${mainContent}
+        ${components.mainContent}
         <div class="pdf-footer">
-          ${footerContent}
+          ${components.footerContent}
         </div>
       </div>
     </body>
     </html>
   `;
-  
-  return optimizedHTML;
 };
 
 export const generatePDFFromMultiPageContent = async (pages: PageContent[], filename?: string): Promise<void> => {

@@ -116,7 +116,7 @@ const GamingLanding = () => {
             {features.map((feature, index) => (
               <Card 
                 key={index} 
-                className="glass p-6 hover:neon-glow-purple transition-all duration-300 transform hover:scale-105 float border-border/20"
+                className="glass p-6 hover:neon-glow-purple transition-all duration-300 transform hover:scale-105 border-border/20"
                 style={{ animationDelay: `${index * 0.2}s` }}
               >
                 <div className="flex items-center justify-between mb-4">

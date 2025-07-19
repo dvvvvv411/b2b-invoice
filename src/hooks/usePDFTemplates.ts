@@ -8,6 +8,7 @@ export interface PDFTemplate {
   name: string;
   slug: string;
   html_content: string;
+  footer_html: string;
   template_type: string;
   is_active: boolean;
   user_id: string;
@@ -59,7 +60,8 @@ export const usePDFTemplates = () => {
   const createTemplate = async (
     name: string,
     htmlContent: string,
-    templateType: string = 'invoice'
+    templateType: string = 'invoice',
+    footerContent: string = ''
   ): Promise<PDFTemplate | null> => {
     if (!user) return null;
 
@@ -72,6 +74,7 @@ export const usePDFTemplates = () => {
           name,
           slug,
           html_content: htmlContent,
+          footer_html: footerContent,
           template_type: templateType,
           user_id: user.id,
         })
@@ -106,7 +109,7 @@ export const usePDFTemplates = () => {
   // Update template
   const updateTemplate = async (
     id: string,
-    updates: Partial<Pick<PDFTemplate, 'name' | 'html_content' | 'template_type' | 'is_active'>>
+    updates: Partial<Pick<PDFTemplate, 'name' | 'html_content' | 'footer_html' | 'template_type' | 'is_active'>>
   ): Promise<boolean> => {
     if (!user) return false;
 
@@ -176,13 +179,18 @@ export const usePDFTemplates = () => {
   };
 
   // Auto-save template
-  const autoSaveTemplate = async (id: string, htmlContent: string): Promise<boolean> => {
+  const autoSaveTemplate = async (id: string, htmlContent: string, footerContent?: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
+      const updateData: any = { html_content: htmlContent };
+      if (footerContent !== undefined) {
+        updateData.footer_html = footerContent;
+      }
+
       const { error } = await supabase
         .from('pdf_templates')
-        .update({ html_content: htmlContent })
+        .update(updateData)
         .eq('id', id)
         .eq('user_id', user.id);
 

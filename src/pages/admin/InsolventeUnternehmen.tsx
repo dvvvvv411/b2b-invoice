@@ -1,9 +1,33 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Plus, Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Plus } from 'lucide-react';
+import { useInsolventeUnternehmen } from '@/hooks/useInsolventeUnternehmen';
+import { InsolventeUnternehmenForm } from '@/components/insolvente-unternehmen/InsolventeUnternehmenForm';
+import { InsolventeUnternehmenTable } from '@/components/insolvente-unternehmen/InsolventeUnternehmenTable';
+import { InsolventesUnternehmen } from '@/hooks/useInsolventeUnternehmen';
 
 const InsolventeUnternehmen = () => {
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingUnternehmen, setEditingUnternehmen] = useState<InsolventesUnternehmen | undefined>();
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const { data: unternehmen = [], isLoading } = useInsolventeUnternehmen();
+
+  const handleCreate = () => {
+    setEditingUnternehmen(undefined);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (unternehmen: InsolventesUnternehmen) => {
+    setEditingUnternehmen(unternehmen);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingUnternehmen(undefined);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -11,31 +35,25 @@ const InsolventeUnternehmen = () => {
           <h1 className="text-3xl font-bold text-gradient-primary font-orbitron">Insolvente Unternehmen</h1>
           <p className="text-muted-foreground">Verwalten Sie insolvente Unternehmen</p>
         </div>
-        <Button variant="gaming">
+        <Button variant="gaming" onClick={handleCreate}>
           <Plus className="w-4 h-4 mr-2" />
           Neues Unternehmen
         </Button>
       </div>
 
-      <Card className="glass p-6 border-primary/20">
-        <div className="flex items-center space-x-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Unternehmen suchen..." 
-              className="pl-10 bg-background/50 border-border/30"
-            />
-          </div>
-        </div>
+      <InsolventeUnternehmenTable
+        unternehmen={unternehmen}
+        isLoading={isLoading}
+        onEdit={handleEdit}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+      />
 
-        <div className="text-center py-12">
-          <p className="text-muted-foreground text-lg">Noch keine insolventen Unternehmen hinzugefügt</p>
-          <Button variant="gaming" className="mt-4">
-            <Plus className="w-4 h-4 mr-2" />
-            Erstes Unternehmen hinzufügen
-          </Button>
-        </div>
-      </Card>
+      <InsolventeUnternehmenForm
+        open={isFormOpen}
+        onOpenChange={handleCloseForm}
+        unternehmen={editingUnternehmen}
+      />
     </div>
   );
 };

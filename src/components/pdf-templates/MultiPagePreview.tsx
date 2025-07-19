@@ -1,3 +1,4 @@
+
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,12 +21,20 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
   const [currentPage, setCurrentPage] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Improved content splitting logic
+  // Simplified content splitting that matches the PDF generator
   const splitContentIntoPages = useCallback(async (content: string) => {
     setIsProcessing(true);
     
     try {
-      // Create a temporary iframe to measure content height accurately
+      // Extract components like the PDF generator does
+      const baseStyles = content.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
+      const footerContent = content.match(/<div class="pdf-footer">[\s\S]*?<\/div>/i)?.[0] || '';
+      const mainContent = content
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '')
+        .replace(/<div class="pdf-footer">[\s\S]*?<\/div>/gi, '');
+
+      // Create a temporary iframe to measure content height
       const tempIframe = document.createElement('iframe');
       tempIframe.style.position = 'absolute';
       tempIframe.style.left = '-9999px';
@@ -37,11 +46,14 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
 
       const doc = tempIframe.contentDocument;
       if (!doc) {
-        setPages([content]);
+        // Fallback to single page
+        const singlePage = createSinglePageHTML(content, baseStyles, mainContent, footerContent, 1, 1);
+        setPages([singlePage]);
+        setIsProcessing(false);
         return;
       }
 
-      // Enhanced content processing
+      // Write test content to measure
       doc.open();
       doc.write(`
         <!DOCTYPE html>
@@ -49,8 +61,7 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
         <head>
           <meta charset="UTF-8">
           <style>
-            ${content.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || ''}
-            
+            ${baseStyles}
             body {
               margin: 0;
               padding: 20px;
@@ -60,31 +71,23 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
               line-height: 1.4;
               color: #000;
             }
-            
-            /* Ensure proper measurement */
-            * {
-              box-sizing: border-box;
-            }
-            
-            .pdf-footer {
-              display: none; /* Hide for measurement */
-            }
+            .pdf-footer { display: none; }
           </style>
         </head>
-        <body>
-          ${content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '').replace(/<div class="pdf-footer">[\s\S]*?<\/div>/gi, '')}
-        </body>
+        <body>${mainContent}</body>
         </html>
       `);
       doc.close();
 
-      // Wait for content to render completely
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Wait for content to render
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const body = doc.body;
       if (!body) {
-        setPages([content]);
+        const singlePage = createSinglePageHTML(content, baseStyles, mainContent, footerContent, 1, 1);
+        setPages([singlePage]);
         document.body.removeChild(tempIframe);
+        setIsProcessing(false);
         return;
       }
 
@@ -92,151 +95,150 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
       const availablePageHeight = A4_HEIGHT - 140; // Account for margins and footer
       const numberOfPages = Math.max(1, Math.ceil(contentHeight / availablePageHeight));
 
-      console.log('Content measurement - Height:', contentHeight, 'Available per page:', availablePageHeight, 'Pages needed:', numberOfPages);
+      console.log('Preview measurement - Height:', contentHeight, 'Available per page:', availablePageHeight, 'Pages needed:', numberOfPages);
 
-      const baseStyles = content.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
-      const footerContent = content.match(/<div class="pdf-footer">[\s\S]*?<\/div>/i)?.[0] || '';
-      const mainContent = content
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-        .replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '')
-        .replace(/<div class="pdf-footer">[\s\S]*?<\/div>/gi, '');
+      // Generate pages
+      const pageContents: string[] = [];
 
       if (numberOfPages <= 1) {
-        // Single page with improved styling
-        const singlePageContent = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="UTF-8">
-            <style>
-              ${baseStyles}
-              
-              body {
-                margin: 0;
-                padding: 0;
-                width: ${A4_WIDTH}px;
-                height: ${A4_HEIGHT}px;
-                font-family: Arial, sans-serif;
-                font-size: 12px;
-                line-height: 1.4;
-                color: #000;
-                position: relative;
-                overflow: hidden;
-                background: white;
-              }
-              
-              .page-content {
-                height: ${A4_HEIGHT - 80}px;
-                overflow: hidden;
-                padding: 20px;
-                box-sizing: border-box;
-              }
-              
-              .pdf-footer {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                height: 60px;
-                background: #f5f5f5;
-                padding: 10px;
-                text-align: center;
-                font-size: 10px;
-                border-top: 1px solid #ddd;
-                box-sizing: border-box;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="page-content">
-              ${mainContent}
-            </div>
-            <div class="pdf-footer">
-              ${footerContent.replace(/<\/?div[^>]*>/gi, '')} | Seite 1 von 1
-            </div>
-          </body>
-          </html>
-        `;
-        setPages([singlePageContent]);
+        // Single page
+        const singlePage = createSinglePageHTML(content, baseStyles, mainContent, footerContent, 1, 1);
+        pageContents.push(singlePage);
       } else {
-        // Multiple pages with improved content distribution
-        const pageContents: string[] = [];
-
+        // Multiple pages with content offset
         for (let i = 0; i < numberOfPages; i++) {
-          const pageContent = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="UTF-8">
-              <style>
-                ${baseStyles}
-                
-                body {
-                  margin: 0;
-                  padding: 0;
-                  width: ${A4_WIDTH}px;
-                  height: ${A4_HEIGHT}px;
-                  font-family: Arial, sans-serif;
-                  font-size: 12px;
-                  line-height: 1.4;
-                  color: #000;
-                  position: relative;
-                  overflow: hidden;
-                  background: white;
-                }
-                
-                .page-content {
-                  height: ${A4_HEIGHT - 80}px;
-                  overflow: hidden;
-                  padding: 20px;
-                  box-sizing: border-box;
-                  transform: translateY(-${i * availablePageHeight}px);
-                }
-                
-                .pdf-footer {
-                  position: absolute;
-                  bottom: 0;
-                  left: 0;
-                  right: 0;
-                  height: 60px;
-                  background: #f5f5f5;
-                  padding: 10px;
-                  text-align: center;
-                  font-size: 10px;
-                  border-top: 1px solid #ddd;
-                  box-sizing: border-box;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="page-content">
-                ${mainContent}
-              </div>
-              <div class="pdf-footer">
-                ${footerContent.replace(/<\/?div[^>]*>/gi, '')} | Seite ${i + 1} von ${numberOfPages}
-              </div>
-            </body>
-            </html>
-          `;
-          pageContents.push(pageContent);
+          const pageHTML = createMultiPageHTML(baseStyles, mainContent, footerContent, i, numberOfPages, availablePageHeight);
+          pageContents.push(pageHTML);
         }
-        setPages(pageContents);
       }
 
+      setPages(pageContents);
       document.body.removeChild(tempIframe);
     } catch (error) {
       console.error('Error splitting content into pages:', error);
+      // Fallback to single page with original content
       setPages([content]);
     } finally {
       setIsProcessing(false);
     }
   }, []);
+
+  // Helper function to create single page HTML
+  const createSinglePageHTML = (originalContent: string, baseStyles: string, mainContent: string, footerContent: string, pageNum: number, totalPages: number): string => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          ${baseStyles}
+          body {
+            margin: 0;
+            padding: 0;
+            width: ${A4_WIDTH}px;
+            height: ${A4_HEIGHT}px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #000;
+            position: relative;
+            overflow: hidden;
+            background: white;
+          }
+          .page-content {
+            height: ${A4_HEIGHT - 80}px;
+            overflow: hidden;
+            padding: 20px;
+            box-sizing: border-box;
+          }
+          .pdf-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #f5f5f5;
+            padding: 10px;
+            text-align: center;
+            font-size: 10px;
+            border-top: 1px solid #ddd;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="page-content">
+          ${mainContent}
+        </div>
+        <div class="pdf-footer">
+          ${footerContent.replace(/<\/?div[^>]*>/gi, '')} | Seite ${pageNum} von ${totalPages}
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  // Helper function to create multi-page HTML
+  const createMultiPageHTML = (baseStyles: string, mainContent: string, footerContent: string, pageIndex: number, totalPages: number, availablePageHeight: number): string => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          ${baseStyles}
+          body {
+            margin: 0;
+            padding: 0;
+            width: ${A4_WIDTH}px;
+            height: ${A4_HEIGHT}px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #000;
+            position: relative;
+            overflow: hidden;
+            background: white;
+          }
+          .page-content {
+            height: ${A4_HEIGHT - 80}px;
+            overflow: hidden;
+            padding: 20px;
+            box-sizing: border-box;
+            transform: translateY(-${pageIndex * availablePageHeight}px);
+          }
+          .pdf-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #f5f5f5;
+            padding: 10px;
+            text-align: center;
+            font-size: 10px;
+            border-top: 1px solid #ddd;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="page-content">
+          ${mainContent}
+        </div>
+        <div class="pdf-footer">
+          ${footerContent.replace(/<\/?div[^>]*>/gi, '')} | Seite ${pageIndex + 1} von ${totalPages}
+        </div>
+      </body>
+      </html>
+    `;
+  };
 
   useEffect(() => {
     if (htmlContent) {

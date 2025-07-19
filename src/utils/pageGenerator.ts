@@ -1,7 +1,10 @@
 
 import { A4_CONSTANTS } from './pdfConstants';
-import { extractAndProcessContent, measureContentHeight, ContentComponents } from './contentProcessor';
-import { generateSinglePageHTML, generateMultiPageHTML } from './htmlGenerator';
+import { extractAndProcessContent, measureContentHeight, type ContentComponents } from './contentProcessor';
+import { 
+  generateSinglePageHTML as generateSinglePageHTMLUtil, 
+  generateMultiPageHTML as generateMultiPageHTMLUtil 
+} from './htmlGenerator';
 
 export interface PageContent {
   html: string;
@@ -10,7 +13,7 @@ export interface PageContent {
 }
 
 // Re-export types and functions for backward compatibility
-export { ContentComponents };
+export type { ContentComponents };
 export { extractAndProcessContent as extractContentComponents };
 export { measureContentHeight };
 
@@ -20,7 +23,7 @@ export const generateSinglePageHTML = (
   pageNumber: number = 1,
   totalPages: number = 1
 ): string => {
-  return generateSinglePageHTML(components, pageNumber, totalPages);
+  return generateSinglePageHTMLUtil(components, pageNumber, totalPages);
 };
 
 // Generate multi-page HTML - updated to use new utilities
@@ -29,5 +32,5 @@ export const generateMultiPageHTML = (
   pageIndex: number,
   totalPages: number
 ): string => {
-  return generateMultiPageHTML(components, pageIndex, totalPages);
+  return generateMultiPageHTMLUtil(components, pageIndex, totalPages);
 };

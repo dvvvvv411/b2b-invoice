@@ -47,14 +47,14 @@ export function AdminSidebar() {
 
   const getNavClass = (path: string) =>
     isActive(path) 
-      ? 'bg-primary text-primary-foreground font-medium' 
-      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground';
+      ? 'bg-gradient-to-r from-primary/20 to-secondary/20 text-primary border border-primary/30 neon-glow-green' 
+      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:neon-glow-purple';
 
   return (
-    <Sidebar className="border-r border-border bg-gray-800">
-      <SidebarContent className="bg-gray-800">
+    <Sidebar className="border-r border-border/20 bg-background">
+      <SidebarContent className="bg-background">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-gray-300 font-semibold text-lg mb-4">
+          <SidebarGroupLabel className="text-foreground/70 font-semibold text-lg mb-4 px-3">
             Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -65,11 +65,11 @@ export function AdminSidebar() {
                     <NavLink 
                       to={item.url} 
                       end={item.url === '/admin'}
-                      className={`flex items-center px-3 py-2 rounded-lg transition-colors ${getNavClass(item.url)}`}
+                      className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${getNavClass(item.url)}`}
                     >
-                      <item.icon className="w-5 h-5 mr-3 text-white" />
+                      <item.icon className="w-5 h-5 mr-3" />
                       {!collapsed && (
-                        <span className="text-white font-medium">{item.title}</span>
+                        <span className="font-medium">{item.title}</span>
                       )}
                     </NavLink>
                   </SidebarMenuButton>

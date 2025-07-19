@@ -5,18 +5,25 @@ import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { A4_CONSTANTS } from '@/utils/pdfConstants';
 import { 
-  extractContentComponents, 
-  generateSinglePageHTML, 
-  generateMultiPageHTML, 
+  extractAndProcessContent, 
   measureContentHeight,
-  PageContent 
-} from '@/utils/pageGenerator';
+} from '@/utils/contentProcessor';
+import { 
+  generateSinglePageHTML, 
+  generateMultiPageHTML 
+} from '@/utils/htmlGenerator';
 
 interface MultiPagePreviewProps {
   htmlContent: string;
   zoom: number;
   onZoomChange: (zoom: number) => void;
   className?: string;
+}
+
+interface PageContent {
+  html: string;
+  pageNumber: number;
+  totalPages: number;
 }
 
 const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25];
@@ -31,8 +38,8 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
     setIsProcessing(true);
     
     try {
-      const components = extractContentComponents(content);
-      console.log('Extracted components:', { 
+      const components = extractAndProcessContent(content);
+      console.log('Preview - Extracted components:', { 
         hasStyles: !!components.baseStyles, 
         hasContent: !!components.mainContent, 
         hasFooter: !!components.footerContent 
@@ -67,6 +74,7 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
       }
 
       setPages(pageContents);
+      console.log('Preview - Generated pages:', pageContents.length);
     } catch (error) {
       console.error('Error splitting content into pages:', error);
       // Fallback to single page with original content

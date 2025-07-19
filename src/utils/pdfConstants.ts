@@ -29,7 +29,7 @@ export const A4_CONSTANTS = {
   }
 };
 
-// Standard CSS for DIN A4 pages
+// Standard CSS for DIN A4 pages - kept for backward compatibility
 export const getStandardPageCSS = (baseStyles: string = ''): string => {
   return `
     ${baseStyles}
@@ -106,8 +106,10 @@ export const getStandardPageCSS = (baseStyles: string = ''): string => {
   `;
 };
 
-// Footer content processor
+// Footer content processor - kept for backward compatibility
 export const processFooterContent = (footerHTML: string): string => {
+  if (!footerHTML) return '';
+  
   // Extract inner content from footer div if it exists
   const match = footerHTML.match(/<div class="pdf-footer"[^>]*>([\s\S]*?)<\/div>/i);
   if (match) {
@@ -120,7 +122,7 @@ export const processFooterContent = (footerHTML: string): string => {
     .trim();
 };
 
-// Content integration utility
+// Content integration utility - kept for backward compatibility
 export const integrateFooterIntoContent = (htmlContent: string, footerContent: string): string => {
   const processedFooter = processFooterContent(footerContent);
   const footerHTML = `<div class="pdf-footer">${processedFooter}</div>`;

@@ -18,8 +18,8 @@ import DataSelectionCard, { SelectedData } from '@/components/pdf-templates/Data
 import { replaceTemplateData, TemplateData } from '@/utils/templateDataReplacer';
 import { replacePlaceholdersWithRealData, SelectedData as LivePreviewData } from '@/utils/livePreviewReplacer';
 import { MultiPagePreview } from '@/components/pdf-templates/MultiPagePreview';
-import { generateMultiPagePDF } from '@/utils/multiPagePDFGenerator';
-import { integrateFooterIntoContent } from '@/utils/pdfConstants';
+import { generateEnhancedMultiPagePDF } from '@/utils/enhancedPDFGenerator';
+import { integrateFooterIntoContent } from '@/utils/contentProcessor';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -317,7 +317,7 @@ export default function PDFTemplates() {
       const filename = `${templateName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
       // Use the enhanced multi-page PDF generator with proper footer integration
-      await generateMultiPagePDF(processedContent, filename);
+      await generateEnhancedMultiPagePDF(processedContent, filename);
 
       toast({
         title: "PDF erfolgreich erstellt",
@@ -357,7 +357,7 @@ export default function PDFTemplates() {
 
   // Process content when htmlContent, footerContent, or selectedData changes
   useEffect(() => {
-    // Integrate footer into main content using the new utility
+    // Integrate footer into main content using the enhanced utility
     let content = integrateFooterIntoContent(htmlContent, footerContent);
 
     // Apply data replacement based on selected mode

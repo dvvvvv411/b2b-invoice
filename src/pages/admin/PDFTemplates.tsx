@@ -1,11 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Download, Save, Plus, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Download, Save, Plus, ZoomIn, ZoomOut, Trash2 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { toast } from '@/hooks/use-toast';
+import { usePDFTemplates, PDFTemplate } from '@/hooks/usePDFTemplates';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -85,18 +87,73 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25];
 
 export default function PDFTemplates() {
+  const { templates, loading, createTemplate, updateTemplate, deleteTemplate, autoSaveTemplate } = usePDFTemplates();
+  
   const [htmlContent, setHtmlContent] = useState(DEFAULT_TEMPLATE);
-  const [selectedTemplate, setSelectedTemplate] = useState('default');
-  const [templateName, setTemplateName] = useState('Standardvorlage');
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [currentTemplate, setCurrentTemplate] = useState<PDFTemplate | null>(null);
+  const [templateName, setTemplateName] = useState('Neue Vorlage');
   const [zoom, setZoom] = useState(1);
+  const [isCreatingNew, setIsCreatingNew] = useState(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const previewRef = useRef<HTMLIFrameElement>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSaveTemplate = () => {
-    // TODO: Implement save to database
-    toast({
-      title: "Template gespeichert",
-      description: `Template "${templateName}" wurde erfolgreich gespeichert.`,
-    });
+  // Auto-save functionality
+  const scheduleAutoSave = useCallback(() => {
+    if (!autoSaveEnabled || isCreatingNew || !currentTemplate) return;
+    
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      const success = await autoSaveTemplate(currentTemplate.id, htmlContent);
+      if (success) {
+        console.log('Template auto-saved');
+      }
+    }, 10000); // 10 seconds
+  }, [autoSaveEnabled, isCreatingNew, currentTemplate, htmlContent, autoSaveTemplate]);
+
+  // Schedule auto-save when content changes
+  useEffect(() => {
+    scheduleAutoSave();
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [scheduleAutoSave]);
+
+  const handleSaveTemplate = async () => {
+    if (isCreatingNew) {
+      const newTemplate = await createTemplate(templateName, htmlContent, 'invoice');
+      if (newTemplate) {
+        setCurrentTemplate(newTemplate);
+        setSelectedTemplate(newTemplate.id);
+        setIsCreatingNew(false);
+      }
+    } else if (currentTemplate) {
+      const success = await updateTemplate(currentTemplate.id, {
+        name: templateName,
+        html_content: htmlContent,
+      });
+      if (success) {
+        toast({
+          title: "Template gespeichert",
+          description: `Template "${templateName}" wurde erfolgreich aktualisiert.`,
+        });
+      }
+    }
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!currentTemplate) return;
+    
+    const success = await deleteTemplate(currentTemplate.id);
+    if (success) {
+      handleNewTemplate();
+    }
   };
 
   const handleDownloadPDF = () => {
@@ -111,6 +168,19 @@ export default function PDFTemplates() {
     setHtmlContent(DEFAULT_TEMPLATE);
     setTemplateName('Neue Vorlage');
     setSelectedTemplate('');
+    setCurrentTemplate(null);
+    setIsCreatingNew(true);
+  };
+
+  const handleTemplateChange = (templateId: string) => {
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      setHtmlContent(template.html_content);
+      setTemplateName(template.name);
+      setSelectedTemplate(templateId);
+      setCurrentTemplate(template);
+      setIsCreatingNew(false);
+    }
   };
 
   const updatePreview = (content: string) => {
@@ -132,9 +202,35 @@ export default function PDFTemplates() {
         </div>
         
         <div className="flex items-center space-x-3">
-          <Button variant="outline" onClick={handleSaveTemplate}>
+          {!isCreatingNew && currentTemplate && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Löschen
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Template löschen</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Sind Sie sicher, dass Sie das Template "{templateName}" löschen möchten? 
+                    Diese Aktion kann nicht rückgängig gemacht werden.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteTemplate}>
+                    Löschen
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          
+          <Button variant="outline" onClick={handleSaveTemplate} disabled={loading}>
             <Save className="w-4 h-4 mr-2" />
-            Template speichern
+            {isCreatingNew ? 'Template erstellen' : 'Speichern'}
           </Button>
           <Button variant="gaming" onClick={handleDownloadPDF}>
             <Download className="w-4 h-4 mr-2" />
@@ -157,14 +253,16 @@ export default function PDFTemplates() {
           
           <div className="flex-1">
             <label className="text-sm font-medium mb-2 block">Template auswählen</label>
-            <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+            <Select value={selectedTemplate} onValueChange={handleTemplateChange} disabled={loading}>
               <SelectTrigger>
-                <SelectValue placeholder="Template auswählen" />
+                <SelectValue placeholder={loading ? "Lädt..." : "Template auswählen"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="default">Standardvorlage</SelectItem>
-                <SelectItem value="invoice">Rechnung Template</SelectItem>
-                <SelectItem value="letter">Brief Template</SelectItem>
+                {templates.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -184,6 +282,11 @@ export default function PDFTemplates() {
         <Card className="p-4 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">HTML Editor</h3>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              {!isCreatingNew && autoSaveEnabled && (
+                <span>Auto-Save aktiviert (alle 10s)</span>
+              )}
+            </div>
           </div>
           
           <div className="flex-1 border rounded-md overflow-hidden min-h-0">

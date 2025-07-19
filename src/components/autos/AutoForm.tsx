@@ -36,6 +36,7 @@ import { Auto, AutoInput, useCreateAuto, useUpdateAuto, MARKEN } from '@/hooks/u
 import { parseFormattedNumber } from '@/lib/formatters';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
 
 const autoSchema = z.object({
   marke: z.string().min(1, 'Marke ist erforderlich'),
@@ -65,15 +66,44 @@ export function AutoForm({ open, onOpenChange, auto }: AutoFormProps) {
   const form = useForm<AutoFormData>({
     resolver: zodResolver(autoSchema),
     defaultValues: {
-      marke: auto?.marke || '',
-      modell: auto?.modell || '',
-      fahrgestell_nr: auto?.fahrgestell_nr || '',
-      dekra_bericht_nr: auto?.dekra_bericht_nr || '',
-      erstzulassung: auto?.erstzulassung ? new Date(auto.erstzulassung) : undefined,
-      kilometer: auto?.kilometer || undefined,
-      einzelpreis_netto: auto?.einzelpreis_netto || undefined,
+      marke: '',
+      modell: '',
+      fahrgestell_nr: '',
+      dekra_bericht_nr: '',
+      erstzulassung: undefined,
+      kilometer: undefined,
+      einzelpreis_netto: undefined,
     },
   });
+
+  // Reset form when dialog opens with or without existing data
+  useEffect(() => {
+    if (open) {
+      if (auto) {
+        // Editing existing auto - populate with existing data
+        form.reset({
+          marke: auto.marke,
+          modell: auto.modell,
+          fahrgestell_nr: auto.fahrgestell_nr,
+          dekra_bericht_nr: auto.dekra_bericht_nr,
+          erstzulassung: auto.erstzulassung ? new Date(auto.erstzulassung) : undefined,
+          kilometer: auto.kilometer || undefined,
+          einzelpreis_netto: auto.einzelpreis_netto || undefined,
+        });
+      } else {
+        // Creating new auto - reset to empty values
+        form.reset({
+          marke: '',
+          modell: '',
+          fahrgestell_nr: '',
+          dekra_bericht_nr: '',
+          erstzulassung: undefined,
+          kilometer: undefined,
+          einzelpreis_netto: undefined,
+        });
+      }
+    }
+  }, [open, auto, form]);
 
   const onSubmit = async (data: AutoFormData) => {
     try {
@@ -123,7 +153,7 @@ export function AutoForm({ open, onOpenChange, auto }: AutoFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Marke *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Marke auswählen" />

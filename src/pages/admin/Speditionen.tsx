@@ -1,9 +1,33 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Plus, Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Plus } from 'lucide-react';
+import { useSpeditionen } from '@/hooks/useSpeditionen';
+import { SpeditionenForm } from '@/components/speditionen/SpeditionenForm';
+import { SpeditionenTable } from '@/components/speditionen/SpeditionenTable';
+import { Spedition } from '@/hooks/useSpeditionen';
 
 const Speditionen = () => {
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingSpedition, setEditingSpedition] = useState<Spedition | undefined>();
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const { data: speditionen = [], isLoading } = useSpeditionen();
+
+  const handleCreate = () => {
+    setEditingSpedition(undefined);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (spedition: Spedition) => {
+    setEditingSpedition(spedition);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingSpedition(undefined);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -11,31 +35,25 @@ const Speditionen = () => {
           <h1 className="text-3xl font-bold text-gradient-primary font-orbitron">Speditionen</h1>
           <p className="text-muted-foreground">Verwalten Sie Ihre Speditionspartner</p>
         </div>
-        <Button variant="gaming">
+        <Button variant="gaming" onClick={handleCreate}>
           <Plus className="w-4 h-4 mr-2" />
           Neue Spedition
         </Button>
       </div>
 
-      <Card className="glass p-6 border-primary/20">
-        <div className="flex items-center space-x-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Speditionen suchen..." 
-              className="pl-10 bg-background/50 border-border/30"
-            />
-          </div>
-        </div>
+      <SpeditionenTable
+        speditionen={speditionen}
+        isLoading={isLoading}
+        onEdit={handleEdit}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+      />
 
-        <div className="text-center py-12">
-          <p className="text-muted-foreground text-lg">Noch keine Speditionen hinzugefügt</p>
-          <Button variant="gaming" className="mt-4">
-            <Plus className="w-4 h-4 mr-2" />
-            Erste Spedition hinzufügen
-          </Button>
-        </div>
-      </Card>
+      <SpeditionenForm
+        open={isFormOpen}
+        onOpenChange={handleCloseForm}
+        spedition={editingSpedition}
+      />
     </div>
   );
 };

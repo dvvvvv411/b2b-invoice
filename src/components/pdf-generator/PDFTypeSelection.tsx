@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, FileText as FileContract, FileCheck } from 'lucide-react';
+import { FileText, FileCheck } from 'lucide-react';
 import { PDFType } from '@/lib/pdfGenerator';
 
 interface PDFTypeSelectionProps {
@@ -24,7 +24,7 @@ export function PDFTypeSelection({ selectedType, onTypeSelect }: PDFTypeSelectio
       id: 'kaufvertrag' as PDFType,
       title: 'Kaufvertrag',
       description: 'Generieren Sie rechtssichere Kaufverträge für Fahrzeuge',
-      icon: FileContract,
+      icon: FileText,
       color: 'text-green-500',
       bgColor: 'bg-green-500/10',
       borderColor: 'border-green-500/20',

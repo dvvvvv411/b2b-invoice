@@ -113,21 +113,19 @@ export default function PDFTemplates() {
     setSelectedTemplate('');
   };
 
-  const updatePreview = () => {
-    if (previewRef.current) {
+  const updatePreview = (content: string) => {
+    if (previewRef.current?.contentDocument) {
       const doc = previewRef.current.contentDocument;
-      if (doc) {
-        doc.open();
-        doc.write(htmlContent);
-        doc.close();
-      }
+      doc.open();
+      doc.write(content);
+      doc.close();
     }
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 h-screen overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-shrink-0">
         <div>
           <h1 className="text-3xl font-bold text-foreground">PDF Templates</h1>
           <p className="text-muted-foreground">Erstellen und verwalten Sie PDF-Vorlagen</p>
@@ -146,7 +144,7 @@ export default function PDFTemplates() {
       </div>
 
       {/* Template Controls */}
-      <Card className="p-4">
+      <Card className="p-4 flex-shrink-0">
         <div className="flex items-center space-x-4">
           <div className="flex-1">
             <label className="text-sm font-medium mb-2 block">Template Name</label>
@@ -181,21 +179,22 @@ export default function PDFTemplates() {
       </Card>
 
       {/* Main Content - Split Screen */}
-      <div className="grid grid-cols-2 gap-6 h-[calc(100vh-300px)]">
+      <div className="grid grid-cols-2 gap-6 flex-1 min-h-0">
         {/* HTML Editor */}
-        <Card className="p-4">
+        <Card className="p-4 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">HTML Editor</h3>
           </div>
           
-          <div className="h-full border rounded-md overflow-hidden">
+          <div className="flex-1 border rounded-md overflow-hidden min-h-0">
             <Editor
               height="100%"
               defaultLanguage="html"
               value={htmlContent}
               onChange={(value) => {
-                setHtmlContent(value || '');
-                setTimeout(updatePreview, 100);
+                const newContent = value || '';
+                setHtmlContent(newContent);
+                updatePreview(newContent);
               }}
               theme="vs-dark"
               options={{
@@ -211,7 +210,7 @@ export default function PDFTemplates() {
         </Card>
 
         {/* Live Preview */}
-        <Card className="p-4">
+        <Card className="p-4 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Live Preview</h3>
             
@@ -249,25 +248,18 @@ export default function PDFTemplates() {
           </div>
           
           {/* DIN A4 Preview Container */}
-          <div className="h-full overflow-auto bg-gray-100 p-4 rounded-md">
+          <div className="flex-1 overflow-auto bg-gray-100 p-4 rounded-md flex justify-center min-h-0">
             <div 
-              className="mx-auto bg-white shadow-lg"
+              className="bg-white shadow-lg flex-shrink-0"
               style={{
                 width: `${794 * zoom}px`,
                 height: `${1123 * zoom}px`,
-                transform: `scale(${zoom})`,
-                transformOrigin: 'top center',
               }}
             >
               <iframe
                 ref={previewRef}
                 className="w-full h-full border-0"
-                style={{ 
-                  width: '794px', 
-                  height: '1123px',
-                  transform: 'scale(1)',
-                }}
-                onLoad={updatePreview}
+                srcDoc={htmlContent}
               />
             </div>
           </div>

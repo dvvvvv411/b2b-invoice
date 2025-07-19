@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Download, Save, Plus, ZoomIn, ZoomOut, Trash2 } from 'lucide-react';
+import { Download, Save, Plus, Trash2 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { toast } from '@/hooks/use-toast';
 import { usePDFTemplates, PDFTemplate } from '@/hooks/usePDFTemplates';
@@ -17,7 +17,8 @@ import { useSpeditionen } from '@/hooks/useSpeditionen';
 import DataSelectionCard, { SelectedData } from '@/components/pdf-templates/DataSelectionCard';
 import { replaceTemplateData, TemplateData } from '@/utils/templateDataReplacer';
 import { replacePlaceholdersWithRealData, SelectedData as LivePreviewData } from '@/utils/livePreviewReplacer';
-import { generatePDFFromIframe } from '@/utils/iframeContentExtractor';
+import { MultiPagePreview } from '@/components/pdf-templates/MultiPagePreview';
+import { generateMultiPagePDF } from '@/utils/multiPagePDFGenerator';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -186,8 +187,6 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 </body>
 </html>`;
 
-const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25];
-
 export default function PDFTemplates() {
   const { templates, loading, createTemplate, updateTemplate, deleteTemplate, autoSaveTemplate } = usePDFTemplates();
   
@@ -198,7 +197,7 @@ export default function PDFTemplates() {
   const [zoom, setZoom] = useState(1);
   const [isCreatingNew, setIsCreatingNew] = useState(true);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
-  const previewRef = useRef<HTMLIFrameElement>(null);
+  const [processedContent, setProcessedContent] = useState(DEFAULT_TEMPLATE);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Data selection state
@@ -280,19 +279,15 @@ export default function PDFTemplates() {
 
   const handleDownloadPDF = async () => {
     try {
-      if (!previewRef.current) {
-        throw new Error('Preview not available');
-      }
-
       // Generate filename
       const filename = `${templateName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Use the new iframe extraction method to generate PDF directly from preview
-      await generatePDFFromIframe(previewRef.current, filename);
+      // Use the new multi-page PDF generator
+      await generateMultiPagePDF(processedContent, filename);
 
       toast({
         title: "PDF erfolgreich erstellt",
-        description: `Das PDF "${filename}" wurde heruntergeladen und entspricht exakt der Vorschau.`,
+        description: `Das PDF "${filename}" wurde heruntergeladen mit korrekter Seiteneinteilung.`,
       });
 
     } catch (error) {
@@ -324,8 +319,9 @@ export default function PDFTemplates() {
     }
   };
 
-  const updatePreview = useCallback((content: string) => {
-    let processedContent = content;
+  // Process content when htmlContent or selectedData changes
+  useEffect(() => {
+    let content = htmlContent;
 
     // Check if Live Preview with real data is enabled
     if (selectedData.useRealData) {
@@ -353,7 +349,7 @@ export default function PDFTemplates() {
       }
 
       // Use the enhanced live preview replacer with all new placeholders
-      processedContent = replacePlaceholdersWithRealData(processedContent, livePreviewData);
+      content = replacePlaceholdersWithRealData(content, livePreviewData);
     } else {
       // Standard mode - still replace old style placeholders for backward compatibility
       const templateData: TemplateData = {};
@@ -377,21 +373,11 @@ export default function PDFTemplates() {
         templateData.spedition = speditionen.find(s => s.id === selectedData.spedition);
       }
 
-      processedContent = replaceTemplateData(processedContent, templateData);
+      content = replaceTemplateData(content, templateData);
     }
 
-    if (previewRef.current?.contentDocument) {
-      const doc = previewRef.current.contentDocument;
-      doc.open();
-      doc.write(processedContent);
-      doc.close();
-    }
-  }, [selectedData, kanzleien, insolventeUnternehmen, kunden, autos, bankkonten, speditionen]);
-
-  // Update preview when selected data changes
-  useEffect(() => {
-    updatePreview(htmlContent);
-  }, [selectedData, htmlContent, updatePreview]);
+    setProcessedContent(content);
+  }, [selectedData, htmlContent, kanzleien, insolventeUnternehmen, kunden, autos, bankkonten, speditionen]);
 
   return (
     <div className="p-6 space-y-6 h-screen overflow-hidden flex flex-col">
@@ -399,7 +385,7 @@ export default function PDFTemplates() {
       <div className="flex items-center justify-between flex-shrink-0">
         <div>
           <h1 className="text-3xl font-bold text-foreground">PDF Templates</h1>
-          <p className="text-muted-foreground">Erstellen und verwalten Sie PDF-Vorlagen</p>
+          <p className="text-muted-foreground">Erstellen und verwalten Sie PDF-Vorlagen mit Multi-Seiten-Support</p>
         </div>
         
         <div className="flex items-center space-x-3">
@@ -504,7 +490,6 @@ export default function PDFTemplates() {
               onChange={(value) => {
                 const newContent = value || '';
                 setHtmlContent(newContent);
-                updatePreview(newContent);
               }}
               theme="vs-dark"
               options={{
@@ -519,60 +504,16 @@ export default function PDFTemplates() {
           </div>
         </Card>
 
-        {/* Live Preview */}
+        {/* Multi-Page Preview */}
         <Card className="p-4 flex flex-col min-h-0">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Live Preview</h3>
-            
-            {/* Zoom Controls */}
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}
-                disabled={zoom <= 0.5}
-              >
-                <ZoomOut className="w-4 h-4" />
-              </Button>
-              
-              {ZOOM_LEVELS.map((level) => (
-                <Button
-                  key={level}
-                  variant={zoom === level ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setZoom(level)}
-                >
-                  {Math.round(level * 100)}%
-                </Button>
-              ))}
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setZoom(Math.min(1.25, zoom + 0.25))}
-                disabled={zoom >= 1.25}
-              >
-                <ZoomIn className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+          <h3 className="text-lg font-semibold mb-4">DIN A4 Multi-Seiten Vorschau</h3>
           
-          {/* DIN A4 Preview Container */}
-          <div className="flex-1 overflow-auto bg-gray-100 p-4 rounded-md flex justify-center min-h-0">
-            <div 
-              className="bg-white shadow-lg flex-shrink-0"
-              style={{
-                width: `${794 * zoom}px`,
-                height: `${1123 * zoom}px`,
-              }}
-            >
-              <iframe
-                ref={previewRef}
-                className="w-full h-full border-0"
-                srcDoc={htmlContent}
-              />
-            </div>
-          </div>
+          <MultiPagePreview
+            htmlContent={processedContent}
+            zoom={zoom}
+            onZoomChange={setZoom}
+            className="flex-1"
+          />
         </Card>
       </div>
     </div>

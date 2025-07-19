@@ -1,6 +1,8 @@
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -46,12 +48,33 @@ export function SpeditionenForm({ open, onOpenChange, spedition }: SpeditionenFo
   const form = useForm<SpeditionInput>({
     resolver: zodResolver(speditionSchema),
     defaultValues: {
-      name: spedition?.name || '',
-      strasse: spedition?.strasse || '',
-      plz: spedition?.plz || '',
-      stadt: spedition?.stadt || '',
+      name: '',
+      strasse: '',
+      plz: '',
+      stadt: '',
     },
   });
+
+  // Reset form when spedition data changes or dialog opens/closes
+  useEffect(() => {
+    if (open && spedition) {
+      // Editing existing spedition - populate with actual values
+      form.reset({
+        name: spedition.name || '',
+        strasse: spedition.strasse || '',
+        plz: spedition.plz || '',
+        stadt: spedition.stadt || '',
+      });
+    } else if (open && !spedition) {
+      // Creating new spedition - reset to empty values
+      form.reset({
+        name: '',
+        strasse: '',
+        plz: '',
+        stadt: '',
+      });
+    }
+  }, [open, spedition, form]);
 
   const onSubmit = async (data: SpeditionInput) => {
     try {
@@ -61,8 +84,7 @@ export function SpeditionenForm({ open, onOpenChange, spedition }: SpeditionenFo
         await createSpedition.mutateAsync(data);
       }
       
-      form.reset();
-      onOpenChange(false);
+      handleClose();
     } catch (error) {
       // Error handling is done in the mutation hooks
     }

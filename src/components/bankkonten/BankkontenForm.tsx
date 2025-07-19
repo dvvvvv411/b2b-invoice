@@ -1,6 +1,8 @@
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,13 +26,13 @@ const bankkontoSchema = z.object({
   kontoname: z.string().min(1, 'Kontoname ist erforderlich'),
   kontoinhaber: z.string().min(1, 'Kontoinhaber ist erforderlich'),
   iban: z.string()
-    .min(22, 'IBAN muss 22 Zeichen haben')
-    .max(22, 'IBAN darf maximal 22 Zeichen haben')
-    .regex(/^DE\d{20}$/, 'Deutsche IBAN Format: DE + 20 Ziffern'),
+    .min(22, 'IBAN muss mindestens 22 Zeichen haben')
+    .max(34, 'IBAN darf maximal 34 Zeichen haben')
+    .regex(/^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/, 'Ungültiges IBAN-Format'),
   bic: z.string()
     .min(8, 'BIC muss mindestens 8 Zeichen haben')
     .max(11, 'BIC darf maximal 11 Zeichen haben')
-    .regex(/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/, 'Ungültiges BIC Format'),
+    .regex(/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/, 'Ungültiges BIC-Format'),
 });
 
 interface BankkontenFormProps {
@@ -49,38 +51,43 @@ export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenForm
   const form = useForm<BankkontoInput>({
     resolver: zodResolver(bankkontoSchema),
     defaultValues: {
-      kontoname: bankkonto?.kontoname || '',
-      kontoinhaber: bankkonto?.kontoinhaber || '',
-      iban: bankkonto?.iban || '',
-      bic: bankkonto?.bic || '',
+      kontoname: '',
+      kontoinhaber: '',
+      iban: '',
+      bic: '',
     },
   });
 
-  // Format IBAN with spaces for display
-  const formatIban = (value: string) => {
-    // Remove all spaces and convert to uppercase
-    const cleaned = value.replace(/\s/g, '').toUpperCase();
-    // Add spaces every 4 characters
-    return cleaned.replace(/(.{4})/g, '$1 ').trim();
-  };
+  // Reset form when bankkonto data changes or dialog opens/closes
+  useEffect(() => {
+    if (open && bankkonto) {
+      // Editing existing bankkonto - populate with actual values
+      form.reset({
+        kontoname: bankkonto.kontoname || '',
+        kontoinhaber: bankkonto.kontoinhaber || '',
+        iban: bankkonto.iban || '',
+        bic: bankkonto.bic || '',
+      });
+    } else if (open && !bankkonto) {
+      // Creating new bankkonto - reset to empty values
+      form.reset({
+        kontoname: '',
+        kontoinhaber: '',
+        iban: '',
+        bic: '',
+      });
+    }
+  }, [open, bankkonto, form]);
 
   const onSubmit = async (data: BankkontoInput) => {
     try {
-      // Remove spaces from IBAN before submitting
-      const cleanedData = {
-        ...data,
-        iban: data.iban.replace(/\s/g, ''),
-        bic: data.bic.toUpperCase(),
-      };
-
       if (isEditing && bankkonto) {
-        await updateBankkonto.mutateAsync({ id: bankkonto.id, bankkonto: cleanedData });
+        await updateBankkonto.mutateAsync({ id: bankkonto.id, bankkonto: data });
       } else {
-        await createBankkonto.mutateAsync(cleanedData);
+        await createBankkonto.mutateAsync(data);
       }
       
-      form.reset();
-      onOpenChange(false);
+      handleClose();
     } catch (error) {
       // Error handling is done in the mutation hooks
     }
@@ -124,7 +131,7 @@ export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenForm
                   <FormItem className="md:col-span-2">
                     <FormLabel>Kontoinhaber *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Mustermann GmbH" />
+                      <Input {...field} placeholder="Muster GmbH" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -135,20 +142,10 @@ export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenForm
                 control={form.control}
                 name="iban"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem>
                     <FormLabel>IBAN *</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="DE89 3704 0044 0532 0130 00"
-                        className="font-mono"
-                        onChange={(e) => {
-                          const formatted = formatIban(e.target.value);
-                          if (formatted.length <= 27) { // DE + 20 digits + 5 spaces
-                            field.onChange(formatted);
-                          }
-                        }}
-                      />
+                      <Input {...field} placeholder="DE89370400440532013000" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -159,15 +156,10 @@ export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenForm
                 control={form.control}
                 name="bic"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem>
                     <FormLabel>BIC *</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="COBADEFFXXX"
-                        className="font-mono"
-                        onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                      />
+                      <Input {...field} placeholder="COBADEFFXXX" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

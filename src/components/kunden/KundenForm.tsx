@@ -1,9 +1,10 @@
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -54,15 +55,42 @@ export function KundenForm({ open, onOpenChange, kunde }: KundenFormProps) {
   const form = useForm<KundeInput>({
     resolver: zodResolver(kundeSchema),
     defaultValues: {
-      name: kunde?.name || '',
-      adresse: kunde?.adresse || '',
-      plz: kunde?.plz || '',
-      stadt: kunde?.stadt || '',
-      geschaeftsfuehrer: kunde?.geschaeftsfuehrer || '',
-      aktenzeichen: kunde?.aktenzeichen || '',
-      kundennummer: kunde?.kundennummer || '',
+      name: '',
+      adresse: '',
+      plz: '',
+      stadt: '',
+      geschaeftsfuehrer: '',
+      aktenzeichen: '',
+      kundennummer: '',
     },
   });
+
+  // Reset form when kunde data changes or dialog opens/closes
+  useEffect(() => {
+    if (open && kunde) {
+      // Editing existing kunde - populate with actual values
+      form.reset({
+        name: kunde.name || '',
+        adresse: kunde.adresse || '',
+        plz: kunde.plz || '',
+        stadt: kunde.stadt || '',
+        geschaeftsfuehrer: kunde.geschaeftsfuehrer || '',
+        aktenzeichen: kunde.aktenzeichen || '',
+        kundennummer: kunde.kundennummer || '',
+      });
+    } else if (open && !kunde) {
+      // Creating new kunde - reset to empty values
+      form.reset({
+        name: '',
+        adresse: '',
+        plz: '',
+        stadt: '',
+        geschaeftsfuehrer: '',
+        aktenzeichen: '',
+        kundennummer: '',
+      });
+    }
+  }, [open, kunde, form]);
 
   const onSubmit = async (data: KundeInput) => {
     try {
@@ -72,8 +100,7 @@ export function KundenForm({ open, onOpenChange, kunde }: KundenFormProps) {
         await createKunde.mutateAsync(data);
       }
       
-      form.reset();
-      onOpenChange(false);
+      handleClose();
     } catch (error) {
       // Error handling is done in the mutation hooks
     }

@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react';
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,10 +21,11 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Kanzlei, KanzleiInput, useCreateKanzlei, useUpdateKanzlei, useUploadLogo } from '@/hooks/useKanzleien';
-import { Loader2, Upload, X, Image } from 'lucide-react';
+import { Loader2, Upload, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const kanzleiSchema = z.object({
-  name: z.string().min(1, 'Unternehmensname ist erforderlich'),
+  name: z.string().min(1, 'Name ist erforderlich'),
   strasse: z.string().min(1, 'Straße ist erforderlich'),
   plz: z.string()
     .min(5, 'PLZ muss mindestens 5 Zeichen haben')
@@ -33,14 +35,13 @@ const kanzleiSchema = z.object({
   rechtsanwalt: z.string().min(1, 'Rechtsanwalt ist erforderlich'),
   telefon: z.string().min(1, 'Telefon ist erforderlich'),
   fax: z.string().optional(),
-  email: z.string().email('Ungültige E-Mail Adresse').optional().or(z.literal('')),
-  website: z.string().url('Ungültige URL').optional().or(z.literal('')),
+  email: z.string().email('Ungültige E-Mail-Adresse').optional().or(z.literal('')),
+  website: z.string().url('Ungültige Website-URL').optional().or(z.literal('')),
   registergericht: z.string().optional(),
   register_nr: z.string().optional(),
   ust_id: z.string().optional(),
+  logo_url: z.string().optional(),
 });
-
-type KanzleiFormData = z.infer<typeof kanzleiSchema>;
 
 interface KanzleiFormProps {
   open: boolean;
@@ -49,97 +50,121 @@ interface KanzleiFormProps {
 }
 
 export function KanzleiForm({ open, onOpenChange, kanzlei }: KanzleiFormProps) {
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(kanzlei?.logo_url || null);
-  const [isDragOver, setIsDragOver] = useState(false);
-  
   const createKanzlei = useCreateKanzlei();
   const updateKanzlei = useUpdateKanzlei();
   const uploadLogo = useUploadLogo();
   
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  
   const isEditing = !!kanzlei;
   const isLoading = createKanzlei.isPending || updateKanzlei.isPending || uploadLogo.isPending;
 
-  const form = useForm<KanzleiFormData>({
+  const form = useForm<KanzleiInput>({
     resolver: zodResolver(kanzleiSchema),
     defaultValues: {
-      name: kanzlei?.name || '',
-      strasse: kanzlei?.strasse || '',
-      plz: kanzlei?.plz || '',
-      stadt: kanzlei?.stadt || '',
-      rechtsanwalt: kanzlei?.rechtsanwalt || '',
-      telefon: kanzlei?.telefon || '',
-      fax: kanzlei?.fax || '',
-      email: kanzlei?.email || '',
-      website: kanzlei?.website || '',
-      registergericht: kanzlei?.registergericht || '',
-      register_nr: kanzlei?.register_nr || '',
-      ust_id: kanzlei?.ust_id || '',
+      name: '',
+      strasse: '',
+      plz: '',
+      stadt: '',
+      rechtsanwalt: '',
+      telefon: '',
+      fax: '',
+      email: '',
+      website: '',
+      registergericht: '',
+      register_nr: '',
+      ust_id: '',
+      logo_url: '',
     },
   });
 
-  const handleFileSelect = useCallback((file: File) => {
-    setLogoFile(file);
-    
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setLogoPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      handleFileSelect(files[0]);
+  // Reset form when kanzlei data changes or dialog opens/closes
+  useEffect(() => {
+    if (open && kanzlei) {
+      // Editing existing kanzlei - populate with actual values
+      form.reset({
+        name: kanzlei.name || '',
+        strasse: kanzlei.strasse || '',
+        plz: kanzlei.plz || '',
+        stadt: kanzlei.stadt || '',
+        rechtsanwalt: kanzlei.rechtsanwalt || '',
+        telefon: kanzlei.telefon || '',
+        fax: kanzlei.fax || '',
+        email: kanzlei.email || '',
+        website: kanzlei.website || '',
+        registergericht: kanzlei.registergericht || '',
+        register_nr: kanzlei.register_nr || '',
+        ust_id: kanzlei.ust_id || '',
+        logo_url: kanzlei.logo_url || '',
+      });
+      setLogoPreview(kanzlei.logo_url);
+    } else if (open && !kanzlei) {
+      // Creating new kanzlei - reset to empty values
+      form.reset({
+        name: '',
+        strasse: '',
+        plz: '',
+        stadt: '',
+        rechtsanwalt: '',
+        telefon: '',
+        fax: '',
+        email: '',
+        website: '',
+        registergericht: '',
+        register_nr: '',
+        ust_id: '',
+        logo_url: '',
+      });
+      setLogoPreview(null);
+      setLogoFile(null);
     }
-  }, [handleFileSelect]);
+  }, [open, kanzlei, form]);
 
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      handleFileSelect(files[0]);
+  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const removeLogo = () => {
+  const removeLogo = async () => {
+    if (kanzlei?.logo_url) {
+      const logoPath = kanzlei.logo_url.split('/').pop();
+      if (logoPath) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.storage
+            .from('kanzlei-logos')
+            .remove([`${user.id}/${logoPath}`]);
+        }
+      }
+    }
     setLogoFile(null);
     setLogoPreview(null);
+    form.setValue('logo_url', '');
   };
 
-  const onSubmit = async (data: KanzleiFormData) => {
+  const onSubmit = async (data: KanzleiInput) => {
     try {
-      let logoUrl = logoPreview;
+      let logoUrl = data.logo_url;
 
-      // Upload logo if a new file was selected
+      // Upload new logo if selected
       if (logoFile) {
         logoUrl = await uploadLogo.mutateAsync(logoFile);
       }
 
-      const kanzleiInput: KanzleiInput = {
-        name: data.name,
-        strasse: data.strasse,
-        plz: data.plz,
-        stadt: data.stadt,
-        rechtsanwalt: data.rechtsanwalt,
-        telefon: data.telefon,
-        fax: data.fax || null,
-        email: data.email || null,
-        website: data.website || null,
-        registergericht: data.registergericht || null,
-        register_nr: data.register_nr || null,
-        ust_id: data.ust_id || null,
-        logo_url: logoUrl,
-      };
+      const kanzleiData = { ...data, logo_url: logoUrl };
 
       if (isEditing && kanzlei) {
-        await updateKanzlei.mutateAsync({ id: kanzlei.id, kanzlei: kanzleiInput });
+        await updateKanzlei.mutateAsync({ id: kanzlei.id, kanzlei: kanzleiData });
       } else {
-        await createKanzlei.mutateAsync(kanzleiInput);
+        await createKanzlei.mutateAsync(kanzleiData);
       }
       
       handleClose();
@@ -151,13 +176,13 @@ export function KanzleiForm({ open, onOpenChange, kanzlei }: KanzleiFormProps) {
   const handleClose = () => {
     form.reset();
     setLogoFile(null);
-    setLogoPreview(kanzlei?.logo_url || null);
+    setLogoPreview(null);
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="glass max-w-4xl max-h-[90vh] overflow-y-auto border-primary/20">
+      <DialogContent className="glass max-w-4xl border-primary/20 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-gradient-primary font-orbitron">
             {isEditing ? 'Kanzlei bearbeiten' : 'Neue Kanzlei'}
@@ -168,34 +193,31 @@ export function KanzleiForm({ open, onOpenChange, kanzlei }: KanzleiFormProps) {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Logo Upload Section */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-foreground">Logo</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Upload Area */}
-                <div
-                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                    isDragOver 
-                      ? 'border-primary bg-primary/10' 
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragOver(true);
-                  }}
-                  onDragLeave={() => setIsDragOver(false)}
-                  onDrop={handleDrop}
-                >
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Logo hier ablegen oder klicken zum Auswählen
-                  </p>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    PNG, JPG bis 2MB
-                  </p>
-                  <input
+              <FormLabel>Logo</FormLabel>
+              <div className="flex items-center space-x-4">
+                {logoPreview && (
+                  <div className="relative">
+                    <img
+                      src={logoPreview}
+                      alt="Logo Preview"
+                      className="w-20 h-20 object-contain border rounded"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute -top-2 -right-2"
+                      onClick={removeLogo}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+                <div>
+                  <Input
                     type="file"
                     accept="image/*"
-                    onChange={handleFileInput}
+                    onChange={handleLogoChange}
                     className="hidden"
                     id="logo-upload"
                   />
@@ -203,54 +225,26 @@ export function KanzleiForm({ open, onOpenChange, kanzlei }: KanzleiFormProps) {
                     type="button"
                     variant="outline"
                     onClick={() => document.getElementById('logo-upload')?.click()}
-                    disabled={isLoading}
                   >
-                    Datei auswählen
+                    <Upload className="w-4 h-4 mr-2" />
+                    Logo hochladen
                   </Button>
-                </div>
-
-                {/* Preview */}
-                <div className="border rounded-lg p-4 bg-muted/20">
-                  <h4 className="text-sm font-medium text-foreground mb-2">Vorschau</h4>
-                  {logoPreview ? (
-                    <div className="relative">
-                      <img
-                        src={logoPreview}
-                        alt="Logo Vorschau"
-                        className="max-w-full h-32 object-contain mx-auto rounded"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2"
-                        onClick={removeLogo}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="h-32 flex items-center justify-center border border-dashed rounded">
-                      <div className="text-center text-muted-foreground">
-                        <Image className="w-8 h-8 mx-auto mb-2" />
-                        <p className="text-sm">Kein Logo ausgewählt</p>
-                      </div>
-                    </div>
-                  )}
+                  <p className="text-sm text-muted-foreground mt-1">
+                    JPG oder PNG, max. 2MB
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Form Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel>Unternehmensname *</FormLabel>
+                    <FormLabel>Name der Kanzlei *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Kanzlei Müller & Partner" />
+                      <Input {...field} placeholder="Muster & Partner Rechtsanwälte" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -262,9 +256,9 @@ export function KanzleiForm({ open, onOpenChange, kanzlei }: KanzleiFormProps) {
                 name="strasse"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel>Straße & Hausnummer *</FormLabel>
+                    <FormLabel>Straße und Hausnummer *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Hauptstraße 123" />
+                      <Input {...field} placeholder="Musterstraße 123" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -402,7 +396,7 @@ export function KanzleiForm({ open, onOpenChange, kanzlei }: KanzleiFormProps) {
                 name="ust_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ust-ID</FormLabel>
+                    <FormLabel>USt-ID</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="DE123456789" />
                     </FormControl>

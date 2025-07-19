@@ -28,10 +28,43 @@ export const germanCurrencyFormat = (amount: number): string => {
   }).format(amount);
 };
 
-// PDF Download Helper - simplified for now
+// PDF Generation Helper
+export const generatePDF = async (data: PDFData): Promise<Blob> => {
+  try {
+    const { pdf } = await import('@react-pdf/renderer');
+    
+    // Import the specific template based on PDF type
+    if (data.type === 'rechnung') {
+      const { RechnungPDF } = await import('./templates/RechnungPDF');
+      const { createElement } = await import('react');
+      return pdf(createElement(RechnungPDF, { data })).toBlob();
+    }
+    
+    // Fallback for other types - create a simple text document
+    throw new Error('Template not implemented yet');
+    
+  } catch (error) {
+    console.error('PDF generation failed:', error);
+    throw error;
+  }
+};
+
+// PDF Download Helper
 export const downloadPDF = async (data: PDFData, filename?: string) => {
-  // For now, create a simple text-based download
-  const content = `
+  try {
+    const blob = await generatePDF(data);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || `${data.type}_${new Date().toISOString().split('T')[0]}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('PDF generation failed:', error);
+    // Fallback to text file
+    const content = `
 PDF-Dokument: ${data.type.toUpperCase()}
 Datum: ${germanDateFormat(new Date())}
 
@@ -40,15 +73,16 @@ ${data.kunde ? `Kunde: ${data.kunde.name}` : ''}
 ${data.auto ? `Fahrzeug: ${data.auto.marke} ${data.auto.modell}` : ''}
 
 Dieses PDF wurde am ${germanDateFormat(new Date())} generiert.
-  `;
+    `;
 
-  const blob = new Blob([content], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename || `${data.type}_${new Date().toISOString().split('T')[0]}.txt`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || `${data.type}_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
 };

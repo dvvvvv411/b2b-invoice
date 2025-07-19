@@ -73,6 +73,10 @@ export default {
 					border: 'hsl(var(--glass-border))'
 				}
 			},
+			fontFamily: {
+				'orbitron': ['Orbitron', 'sans-serif'],
+				'sans': ['Inter', 'system-ui', 'sans-serif'],
+			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',

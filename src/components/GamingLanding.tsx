@@ -89,7 +89,7 @@ const GamingLanding = () => {
               <Sparkles className="w-4 h-4 text-secondary" />
             </div>
             
-            <h1 className="text-7xl md:text-8xl font-bold tracking-tight">
+            <h1 className="text-7xl md:text-8xl font-bold tracking-tight font-orbitron">
               <span className="text-gradient-primary">B2B</span>{" "}
               <span className="text-gradient-secondary">Panel</span>
             </h1>

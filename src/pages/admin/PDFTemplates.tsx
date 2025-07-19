@@ -16,6 +16,7 @@ import { useBankkonten } from '@/hooks/useBankkonten';
 import { useSpeditionen } from '@/hooks/useSpeditionen';
 import DataSelectionCard, { SelectedData } from '@/components/pdf-templates/DataSelectionCard';
 import { replaceTemplateData, TemplateData } from '@/utils/templateDataReplacer';
+import { replacePlaceholdersWithRealData, SelectedData as LivePreviewData } from '@/utils/livePreviewReplacer';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -216,11 +217,37 @@ export default function PDFTemplates() {
   const updatePreview = useCallback((content: string) => {
     let processedContent = content;
 
-    // Replace placeholders with real data if enabled
+    // Check if Live Preview with real data is enabled
     if (selectedData.useRealData) {
-      const templateData: TemplateData = {};
+      // Build data object for new live preview replacer
+      const livePreviewData: LivePreviewData = {};
 
       // Get selected data objects
+      if (selectedData.kanzlei) {
+        livePreviewData.kanzlei = kanzleien.find(k => k.id === selectedData.kanzlei);
+      }
+      if (selectedData.insolventesUnternehmen) {
+        livePreviewData.insolventes = insolventeUnternehmen.find(u => u.id === selectedData.insolventesUnternehmen);
+      }
+      if (selectedData.kunde) {
+        livePreviewData.kunde = kunden.find(k => k.id === selectedData.kunde);
+      }
+      if (selectedData.auto) {
+        livePreviewData.auto = autos.find(a => a.id === selectedData.auto);
+      }
+      if (selectedData.bankkonto) {
+        livePreviewData.bankkonto = bankkonten.find(b => b.id === selectedData.bankkonto);
+      }
+      if (selectedData.spedition) {
+        livePreviewData.spedition = speditionen.find(s => s.id === selectedData.spedition);
+      }
+
+      // Use the enhanced live preview replacer with all new placeholders
+      processedContent = replacePlaceholdersWithRealData(processedContent, livePreviewData);
+    } else {
+      // Standard mode - still replace old style placeholders for backward compatibility
+      const templateData: TemplateData = {};
+
       if (selectedData.kanzlei) {
         templateData.kanzlei = kanzleien.find(k => k.id === selectedData.kanzlei);
       }

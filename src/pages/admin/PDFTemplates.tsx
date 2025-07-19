@@ -1,11 +1,10 @@
-
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Download, Save, Plus, Trash2, Settings } from 'lucide-react';
+import { Download, Save, Plus, Trash2 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { toast } from '@/hooks/use-toast';
 import { usePDFTemplates, PDFTemplate } from '@/hooks/usePDFTemplates';
@@ -19,8 +18,7 @@ import DataSelectionCard, { SelectedData } from '@/components/pdf-templates/Data
 import { replaceTemplateData, TemplateData } from '@/utils/templateDataReplacer';
 import { replacePlaceholdersWithRealData, SelectedData as LivePreviewData } from '@/utils/livePreviewReplacer';
 import { MultiPagePreview } from '@/components/pdf-templates/MultiPagePreview';
-import { FooterConfiguration, FooterConfig, DEFAULT_FOOTER_CONFIG } from '@/components/pdf-templates/FooterConfiguration';
-import { generateEnhancedMultiPagePDF } from '@/utils/enhancedMultiPagePDFGenerator';
+import { generateMultiPagePDF } from '@/utils/multiPagePDFGenerator';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -89,6 +87,17 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
             padding-top: 5px;
             text-align: center;
             font-size: 10px;
+        }
+        .pdf-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #f5f5f5;
+            padding: 10px;
+            text-align: center;
+            font-size: 10px;
+            border-top: 1px solid #ddd;
         }
     </style>
 </head>
@@ -169,6 +178,12 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
             </div>
         </div>
     </div>
+    
+    <div class="pdf-footer">
+        {{ KANZLEI_NAME }} | {{ KANZLEI_STRASSE }}, {{ KANZLEI_PLZ }} {{ KANZLEI_STADT }} | 
+        Tel: {{ KANZLEI_TELEFON }} | E-Mail: {{ KANZLEI_EMAIL }} | 
+        Erstellt am {{ AKTUELLES_DATUM }}
+    </div>
 </body>
 </html>`;
 
@@ -183,11 +198,6 @@ export default function PDFTemplates() {
   const [isCreatingNew, setIsCreatingNew] = useState(true);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [processedContent, setProcessedContent] = useState(DEFAULT_TEMPLATE);
-  const [showFooterConfig, setShowFooterConfig] = useState(false);
-  const [footerConfig, setFooterConfig] = useState<FooterConfig>(() => {
-    const saved = localStorage.getItem('pdfTemplateFooterConfig');
-    return saved ? JSON.parse(saved) : DEFAULT_FOOTER_CONFIG;
-  });
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Data selection state
@@ -211,11 +221,6 @@ export default function PDFTemplates() {
   const { data: autos = [] } = useAutos();
   const { data: bankkonten = [] } = useBankkonten();
   const { data: speditionen = [] } = useSpeditionen();
-
-  // Save footer config to localStorage
-  useEffect(() => {
-    localStorage.setItem('pdfTemplateFooterConfig', JSON.stringify(footerConfig));
-  }, [footerConfig]);
 
   const scheduleAutoSave = useCallback(() => {
     if (!autoSaveEnabled || isCreatingNew || !currentTemplate) return;
@@ -277,12 +282,12 @@ export default function PDFTemplates() {
       // Generate filename
       const filename = `${templateName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Use the enhanced multi-page PDF generator with footer configuration
-      await generateEnhancedMultiPagePDF(processedContent, footerConfig, filename);
+      // Use the corrected multi-page PDF generator
+      await generateMultiPagePDF(processedContent, filename);
 
       toast({
         title: "PDF erfolgreich erstellt",
-        description: `Das PDF "${filename}" wurde mit konfigurierbarem Footer heruntergeladen.`,
+        description: `Das PDF "${filename}" wurde mit korrekter Multi-Seiten-Aufteilung heruntergeladen.`,
       });
 
     } catch (error) {
@@ -380,19 +385,10 @@ export default function PDFTemplates() {
       <div className="flex items-center justify-between flex-shrink-0">
         <div>
           <h1 className="text-3xl font-bold text-foreground">PDF Templates</h1>
-          <p className="text-muted-foreground">Erstellen und verwalten Sie PDF-Vorlagen mit konfigurierbaren Footern</p>
+          <p className="text-muted-foreground">Erstellen und verwalten Sie PDF-Vorlagen mit Multi-Seiten-Support</p>
         </div>
         
         <div className="flex items-center space-x-3">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowFooterConfig(!showFooterConfig)}
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Footer konfigurieren
-          </Button>
-          
           {!isCreatingNew && currentTemplate && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -466,14 +462,6 @@ export default function PDFTemplates() {
           </div>
         </div>
       </Card>
-
-      {/* Footer Configuration */}
-      {showFooterConfig && (
-        <FooterConfiguration
-          config={footerConfig}
-          onConfigChange={setFooterConfig}
-        />
-      )}
 
       {/* Data Selection Card */}
       <DataSelectionCard

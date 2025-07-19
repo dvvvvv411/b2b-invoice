@@ -17,7 +17,7 @@ import { useSpeditionen } from '@/hooks/useSpeditionen';
 import DataSelectionCard, { SelectedData } from '@/components/pdf-templates/DataSelectionCard';
 import { replaceTemplateData, TemplateData } from '@/utils/templateDataReplacer';
 import { replacePlaceholdersWithRealData, SelectedData as LivePreviewData } from '@/utils/livePreviewReplacer';
-import { generateHTMLToPDF } from '@/lib/pdfGenerator';
+import { generatePDFFromIframe } from '@/utils/iframeContentExtractor';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -86,6 +86,17 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
             padding-top: 5px;
             text-align: center;
             font-size: 10px;
+        }
+        .pdf-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #f5f5f5;
+            padding: 10px;
+            text-align: center;
+            font-size: 10px;
+            border-top: 1px solid #ddd;
         }
     </style>
 </head>
@@ -167,7 +178,6 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
         </div>
     </div>
     
-    <!-- This footer will be processed by our HTML processor -->
     <div class="pdf-footer">
         {{ KANZLEI_NAME }} | {{ KANZLEI_STRASSE }}, {{ KANZLEI_PLZ }} {{ KANZLEI_STADT }} | 
         Tel: {{ KANZLEI_TELEFON }} | E-Mail: {{ KANZLEI_EMAIL }} | 
@@ -213,7 +223,6 @@ export default function PDFTemplates() {
   const { data: bankkonten = [] } = useBankkonten();
   const { data: speditionen = [] } = useSpeditionen();
 
-  // Auto-save functionality
   const scheduleAutoSave = useCallback(() => {
     if (!autoSaveEnabled || isCreatingNew || !currentTemplate) return;
     
@@ -229,7 +238,6 @@ export default function PDFTemplates() {
     }, 10000); // 10 seconds
   }, [autoSaveEnabled, isCreatingNew, currentTemplate, htmlContent, autoSaveTemplate]);
 
-  // Schedule auto-save when content changes
   useEffect(() => {
     scheduleAutoSave();
     return () => {
@@ -272,67 +280,19 @@ export default function PDFTemplates() {
 
   const handleDownloadPDF = async () => {
     try {
-      // Get the processed HTML content from the live preview
-      let processedContent = htmlContent;
-
-      // Apply the same data replacement logic as in the preview
-      if (selectedData.useRealData) {
-        const livePreviewData: LivePreviewData = {};
-
-        if (selectedData.kanzlei) {
-          livePreviewData.kanzlei = kanzleien.find(k => k.id === selectedData.kanzlei);
-        }
-        if (selectedData.insolventesUnternehmen) {
-          livePreviewData.insolventes = insolventeUnternehmen.find(u => u.id === selectedData.insolventesUnternehmen);
-        }
-        if (selectedData.kunde) {
-          livePreviewData.kunde = kunden.find(k => k.id === selectedData.kunde);
-        }
-        if (selectedData.auto) {
-          livePreviewData.auto = autos.find(a => a.id === selectedData.auto);
-        }
-        if (selectedData.bankkonto) {
-          livePreviewData.bankkonto = bankkonten.find(b => b.id === selectedData.bankkonto);
-        }
-        if (selectedData.spedition) {
-          livePreviewData.spedition = speditionen.find(s => s.id === selectedData.spedition);
-        }
-
-        processedContent = replacePlaceholdersWithRealData(processedContent, livePreviewData);
-      } else {
-        const templateData: TemplateData = {};
-
-        if (selectedData.kanzlei) {
-          templateData.kanzlei = kanzleien.find(k => k.id === selectedData.kanzlei);
-        }
-        if (selectedData.insolventesUnternehmen) {
-          templateData.insolventesUnternehmen = insolventeUnternehmen.find(u => u.id === selectedData.insolventesUnternehmen);
-        }
-        if (selectedData.kunde) {
-          templateData.kunde = kunden.find(k => k.id === selectedData.kunde);
-        }
-        if (selectedData.auto) {
-          templateData.auto = autos.find(a => a.id === selectedData.auto);
-        }
-        if (selectedData.bankkonto) {
-          templateData.bankkonto = bankkonten.find(b => b.id === selectedData.bankkonto);
-        }
-        if (selectedData.spedition) {
-          templateData.spedition = speditionen.find(s => s.id === selectedData.spedition);
-        }
-
-        processedContent = replaceTemplateData(processedContent, templateData);
+      if (!previewRef.current) {
+        throw new Error('Preview not available');
       }
 
       // Generate filename
       const filename = `${templateName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Generate PDF from HTML
-      await generateHTMLToPDF(processedContent, filename);
+      // Use the new iframe extraction method to generate PDF directly from preview
+      await generatePDFFromIframe(previewRef.current, filename);
 
       toast({
         title: "PDF erfolgreich erstellt",
-        description: `Das PDF "${filename}" wurde heruntergeladen.`,
+        description: `Das PDF "${filename}" wurde heruntergeladen und entspricht exakt der Vorschau.`,
       });
 
     } catch (error) {

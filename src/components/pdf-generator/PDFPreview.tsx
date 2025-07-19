@@ -14,7 +14,7 @@ import {
   Truck, 
   AlertTriangle 
 } from 'lucide-react';
-import { PDFData, downloadPDF } from '@/lib/pdfGenerator';
+import { PDFData } from '@/lib/pdfGenerator';
 import { useToast } from '@/hooks/use-toast';
 import { PDFPreviewDialog } from './PDFPreviewDialog';
 
@@ -42,7 +42,7 @@ export function PDFPreview({ pdfData }: PDFPreviewProps) {
   const handleGeneratePDF = async () => {
     setIsGenerating(true);
     try {
-      // Import the enhanced HTML to PDF generator
+      // Import the simplified PDF generator that uses HTML to PDF directly
       const { generateHTMLToPDF } = await import('@/lib/pdfGenerator');
       
       // Create a simple HTML template for the PDF preview
@@ -90,13 +90,24 @@ export function PDFPreview({ pdfData }: PDFPreviewProps) {
                     font-weight: bold;
                     color: #555;
                 }
+                .pdf-footer {
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    background: #f5f5f5;
+                    padding: 10px;
+                    text-align: center;
+                    font-size: 10px;
+                    border-top: 1px solid #ddd;
+                }
             </style>
         </head>
         <body>
             <div class="pdf-content">
                 <div class="header">
                     <div class="title">${getTypeTitle(pdfData.type)}</div>
-                    <p>Erstellt am {{ AKTUELLES_DATUM }}</p>
+                    <p>Erstellt am ${new Date().toLocaleDateString('de-DE')}</p>
                 </div>
                 
                 ${pdfData.kanzlei ? `
@@ -160,9 +171,8 @@ export function PDFPreview({ pdfData }: PDFPreviewProps) {
                 ` : ''}
             </div>
             
-            <!-- Enhanced footer that will be processed -->
             <div class="pdf-footer">
-                PDF erstellt am {{ AKTUELLES_DATUM }} | Dokumenttyp: ${getTypeTitle(pdfData.type)}
+                PDF erstellt am ${new Date().toLocaleDateString('de-DE')} | Dokumenttyp: ${getTypeTitle(pdfData.type)}
                 ${pdfData.kanzlei ? ` | ${pdfData.kanzlei.name}` : ''}
             </div>
         </body>
@@ -304,7 +314,7 @@ export function PDFPreview({ pdfData }: PDFPreviewProps) {
           PDF Vorschau & Generierung
         </h2>
         <p className="text-muted-foreground">
-          Überprüfen Sie die Daten und generieren Sie Ihr PDF-Dokument mit verbesserter Fußzeile
+          Überprüfen Sie die Daten und generieren Sie Ihr PDF-Dokument
         </p>
       </div>
 
@@ -393,7 +403,7 @@ export function PDFPreview({ pdfData }: PDFPreviewProps) {
         </div>
         
         <p className="text-xs text-muted-foreground text-center mt-3">
-          Das PDF wird mit verbesserter Fußzeilen-Unterstützung erstellt
+          Das PDF wird direkt aus der Vorschau generiert
         </p>
       </Card>
     </div>

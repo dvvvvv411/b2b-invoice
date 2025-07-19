@@ -1,3 +1,4 @@
+
 // PDF Type definitions
 export type PDFType = 'rechnung' | 'kaufvertrag' | 'uebernahmebestaetigung';
 
@@ -28,27 +29,19 @@ export const germanCurrencyFormat = (amount: number): string => {
   }).format(amount);
 };
 
-// Enhanced HTML to PDF conversion function with footer support
+// Simplified HTML to PDF conversion function - no complex processing
 export const generateHTMLToPDF = async (htmlContent: string, filename?: string): Promise<void> => {
   try {
-    // Dynamically import html2pdf and our HTML processor
+    // Dynamically import html2pdf
     const html2pdf = (await import('html2pdf.js')).default;
-    const { processHTMLWithFooters } = await import('./htmlProcessor');
     
-    // Process the HTML content to add proper footers
-    const { processedContent } = processHTMLWithFooters({
-      content: htmlContent,
-      pageHeight: 1123, // A4 height in pixels at 96 DPI
-      pageWidth: 794     // A4 width in pixels at 96 DPI
-    });
-    
-    // Create a temporary container for the processed HTML content
+    // Create a temporary container for the HTML content
     const element = document.createElement('div');
-    element.innerHTML = processedContent;
+    element.innerHTML = htmlContent;
     
     // Configure html2pdf options with enhanced settings
     const options = {
-      margin: [15, 10, 15, 10], // top, left, bottom, right in mm - reduced bottom margin since we handle footer
+      margin: [15, 10, 20, 10], // top, left, bottom, right in mm
       filename: filename || `document_${new Date().toISOString().split('T')[0]}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
@@ -57,7 +50,9 @@ export const generateHTMLToPDF = async (htmlContent: string, filename?: string):
         letterRendering: true,
         allowTaint: false,
         logging: false,
-        removeContainer: true
+        removeContainer: true,
+        scrollX: 0,
+        scrollY: 0
       },
       jsPDF: { 
         unit: 'mm', 
@@ -76,7 +71,7 @@ export const generateHTMLToPDF = async (htmlContent: string, filename?: string):
     // Generate and download the PDF
     await html2pdf().set(options).from(element).save();
     
-    console.log('PDF generated successfully with enhanced footer support');
+    console.log('PDF generated successfully');
     
   } catch (error) {
     console.error('HTML to PDF conversion failed:', error);
@@ -84,7 +79,7 @@ export const generateHTMLToPDF = async (htmlContent: string, filename?: string):
   }
 };
 
-// PDF Generation Helper (existing function)
+// PDF Generation Helper (existing function for backward compatibility)
 export const generatePDF = async (data: PDFData): Promise<Blob> => {
   try {
     const { pdf } = await import('@react-pdf/renderer');
@@ -104,7 +99,7 @@ export const generatePDF = async (data: PDFData): Promise<Blob> => {
   }
 };
 
-// PDF Download Helper (existing function)
+// PDF Download Helper (existing function for backward compatibility)
 export const downloadPDF = async (data: PDFData, filename?: string) => {
   try {
     const blob = await generatePDF(data);

@@ -1,4 +1,3 @@
-
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,18 +20,19 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
   const [currentPage, setCurrentPage] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Split content into pages based on A4 dimensions
+  // Improved content splitting logic
   const splitContentIntoPages = useCallback(async (content: string) => {
     setIsProcessing(true);
     
     try {
-      // Create a temporary iframe to measure content height
+      // Create a temporary iframe to measure content height accurately
       const tempIframe = document.createElement('iframe');
       tempIframe.style.position = 'absolute';
       tempIframe.style.left = '-9999px';
       tempIframe.style.width = `${A4_WIDTH}px`;
-      tempIframe.style.height = `${A4_HEIGHT * 10}px`; // Make it tall to see all content
+      tempIframe.style.height = `${A4_HEIGHT * 10}px`;
       tempIframe.style.border = 'none';
+      tempIframe.style.visibility = 'hidden';
       document.body.appendChild(tempIframe);
 
       const doc = tempIframe.contentDocument;
@@ -41,7 +41,7 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
         return;
       }
 
-      // Write the content and add page break detection
+      // Enhanced content processing
       doc.open();
       doc.write(`
         <!DOCTYPE html>
@@ -51,91 +51,77 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
           <style>
             ${content.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || ''}
             
-            /* Additional styles for page breaking */
-            .page-container {
-              width: ${A4_WIDTH}px;
-              min-height: ${A4_HEIGHT}px;
-              padding: 0;
+            body {
               margin: 0;
-              box-sizing: border-box;
-              page-break-after: always;
-              position: relative;
+              padding: 20px;
+              width: ${A4_WIDTH - 40}px;
+              font-family: Arial, sans-serif;
+              font-size: 12px;
+              line-height: 1.4;
+              color: #000;
             }
             
-            .page-content {
-              height: ${A4_HEIGHT - 120}px; /* Account for margins */
-              overflow: hidden;
-              padding: 20px;
+            /* Ensure proper measurement */
+            * {
               box-sizing: border-box;
             }
             
             .pdf-footer {
-              position: absolute;
-              bottom: 0;
-              left: 0;
-              right: 0;
-              height: 60px;
-              background: #f5f5f5;
-              padding: 10px;
-              text-align: center;
-              font-size: 10px;
-              border-top: 1px solid #ddd;
-              box-sizing: border-box;
-            }
-            
-            /* Prevent breaking inside these elements */
-            .info-section, .signature-section, table {
-              page-break-inside: avoid;
-            }
-            
-            /* Force page breaks */
-            .page-break-before {
-              page-break-before: always;
+              display: none; /* Hide for measurement */
             }
           </style>
         </head>
         <body>
-          <div id="content-wrapper">
-            ${content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '')}
-          </div>
+          ${content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '').replace(/<div class="pdf-footer">[\s\S]*?<\/div>/gi, '')}
         </body>
         </html>
       `);
       doc.close();
 
-      // Wait for content to render
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for content to render completely
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      const contentWrapper = doc.getElementById('content-wrapper');
-      if (!contentWrapper) {
+      const body = doc.body;
+      if (!body) {
         setPages([content]);
         document.body.removeChild(tempIframe);
         return;
       }
 
-      const contentHeight = contentWrapper.scrollHeight;
-      const availablePageHeight = A4_HEIGHT - 120; // Account for margins and footer
-      const numberOfPages = Math.ceil(contentHeight / availablePageHeight);
+      const contentHeight = body.scrollHeight;
+      const availablePageHeight = A4_HEIGHT - 140; // Account for margins and footer
+      const numberOfPages = Math.max(1, Math.ceil(contentHeight / availablePageHeight));
 
-      console.log('Content height:', contentHeight, 'Pages needed:', numberOfPages);
+      console.log('Content measurement - Height:', contentHeight, 'Available per page:', availablePageHeight, 'Pages needed:', numberOfPages);
+
+      const baseStyles = content.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
+      const footerContent = content.match(/<div class="pdf-footer">[\s\S]*?<\/div>/i)?.[0] || '';
+      const mainContent = content
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '')
+        .replace(/<div class="pdf-footer">[\s\S]*?<\/div>/gi, '');
 
       if (numberOfPages <= 1) {
-        // Single page - wrap in page container
+        // Single page with improved styling
         const singlePageContent = `
           <!DOCTYPE html>
           <html>
           <head>
             <meta charset="UTF-8">
             <style>
-              ${content.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || ''}
+              ${baseStyles}
               
-              .page-container {
+              body {
+                margin: 0;
+                padding: 0;
                 width: ${A4_WIDTH}px;
                 height: ${A4_HEIGHT}px;
-                padding: 0;
-                margin: 0;
-                box-sizing: border-box;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                line-height: 1.4;
+                color: #000;
                 position: relative;
+                overflow: hidden;
                 background: white;
               }
               
@@ -158,26 +144,26 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
                 font-size: 10px;
                 border-top: 1px solid #ddd;
                 box-sizing: border-box;
+                display: flex;
+                align-items: center;
+                justify-content: center;
               }
             </style>
           </head>
           <body>
-            <div class="page-container">
-              <div class="page-content">
-                ${content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '').replace(/<div class="pdf-footer">[\s\S]*?<\/div>/gi, '')}
-              </div>
-              ${content.match(/<div class="pdf-footer">[\s\S]*?<\/div>/i)?.[0] || ''}
+            <div class="page-content">
+              ${mainContent}
+            </div>
+            <div class="pdf-footer">
+              ${footerContent.replace(/<\/?div[^>]*>/gi, '')} | Seite 1 von 1
             </div>
           </body>
           </html>
         `;
         setPages([singlePageContent]);
       } else {
-        // Multiple pages - split content
+        // Multiple pages with improved content distribution
         const pageContents: string[] = [];
-        const baseStyles = content.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
-        const footerContent = content.match(/<div class="pdf-footer">[\s\S]*?<\/div>/i)?.[0] || '';
-        const mainContent = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '').replace(/<div class="pdf-footer">[\s\S]*?<\/div>/gi, '');
 
         for (let i = 0; i < numberOfPages; i++) {
           const pageContent = `
@@ -188,13 +174,17 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
               <style>
                 ${baseStyles}
                 
-                .page-container {
+                body {
+                  margin: 0;
+                  padding: 0;
                   width: ${A4_WIDTH}px;
                   height: ${A4_HEIGHT}px;
-                  padding: 0;
-                  margin: 0;
-                  box-sizing: border-box;
+                  font-family: Arial, sans-serif;
+                  font-size: 12px;
+                  line-height: 1.4;
+                  color: #000;
                   position: relative;
+                  overflow: hidden;
                   background: white;
                 }
                 
@@ -218,19 +208,18 @@ export function MultiPagePreview({ htmlContent, zoom, onZoomChange, className }:
                   font-size: 10px;
                   border-top: 1px solid #ddd;
                   box-sizing: border-box;
-                }
-                
-                .page-number::after {
-                  content: "Seite ${i + 1} von ${numberOfPages}";
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
                 }
               </style>
             </head>
             <body>
-              <div class="page-container">
-                <div class="page-content">
-                  ${mainContent}
-                </div>
-                ${footerContent.replace('{{ AKTUELLES_DATUM }}', new Date().toLocaleDateString('de-DE'))} | <span class="page-number"></span>
+              <div class="page-content">
+                ${mainContent}
+              </div>
+              <div class="pdf-footer">
+                ${footerContent.replace(/<\/?div[^>]*>/gi, '')} | Seite ${i + 1} von ${numberOfPages}
               </div>
             </body>
             </html>

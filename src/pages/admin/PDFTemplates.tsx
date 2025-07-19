@@ -282,12 +282,12 @@ export default function PDFTemplates() {
       // Generate filename
       const filename = `${templateName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Use the new multi-page PDF generator
+      // Use the corrected multi-page PDF generator
       await generateMultiPagePDF(processedContent, filename);
 
       toast({
         title: "PDF erfolgreich erstellt",
-        description: `Das PDF "${filename}" wurde heruntergeladen mit korrekter Seiteneinteilung.`,
+        description: `Das PDF "${filename}" wurde mit korrekter Multi-Seiten-Aufteilung heruntergeladen.`,
       });
 
     } catch (error) {

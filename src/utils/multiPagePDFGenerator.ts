@@ -1,7 +1,5 @@
+
 import { A4_CONSTANTS } from './pdfConstants';
-import { extractAndProcessContent, measureContentHeight, ContentComponents } from './contentProcessor';
-import { generateSinglePageHTML, generateMultiPageHTML } from './htmlGenerator';
-import { generateEnhancedMultiPagePDF } from './enhancedPDFGenerator';
 import { generateDirectPDF } from './directPDFGenerator';
 
 export interface PageContent {
@@ -10,106 +8,20 @@ export interface PageContent {
   totalPages: number;
 }
 
-// Split HTML into pages using improved content processing with better error handling
-export const splitHTMLIntoPages = async (htmlContent: string): Promise<PageContent[]> => {
-  return new Promise((resolve, reject) => {
-    console.log('📄 Starting HTML page splitting...');
-    
-    try {
-      if (!htmlContent || typeof htmlContent !== 'string') {
-        console.warn('⚠️ Invalid HTML content for splitting');
-        resolve([{
-          html: '<div>No content available</div>',
-          pageNumber: 1,
-          totalPages: 1
-        }]);
-        return;
-      }
-      
-      const components = extractAndProcessContent(htmlContent);
-      console.log('📄 Components extracted for splitting');
-      
-      measureContentHeight(components).then((contentHeight) => {
-        const numberOfPages = Math.max(1, Math.ceil(contentHeight / A4_CONSTANTS.AVAILABLE_PAGE_HEIGHT));
-        
-        console.log('📄 PDF Generator - Total content height:', contentHeight, 'Pages needed:', numberOfPages);
-
-        const pages: PageContent[] = [];
-
-        try {
-          if (numberOfPages <= 1) {
-            // Single page
-            const pageHtml = generateSinglePageHTML(components, 1, 1);
-            pages.push({
-              html: pageHtml,
-              pageNumber: 1,
-              totalPages: 1
-            });
-            console.log('📄 Generated single page');
-          } else {
-            // Multiple pages
-            for (let i = 0; i < numberOfPages; i++) {
-              const pageHtml = generateMultiPageHTML(components, i, numberOfPages);
-              pages.push({
-                html: pageHtml,
-                pageNumber: i + 1,
-                totalPages: numberOfPages
-              });
-            }
-            console.log('📄 Generated', numberOfPages, 'pages');
-          }
-
-          resolve(pages);
-        } catch (pageGenError) {
-          console.error('❌ Error generating pages:', pageGenError);
-          // Fallback to single page with original content
-          resolve([{
-            html: htmlContent,
-            pageNumber: 1,
-            totalPages: 1
-          }]);
-        }
-
-      }).catch((measureError) => {
-        console.error('❌ Error measuring content height:', measureError);
-        // Fallback to single page
-        const components = extractAndProcessContent(htmlContent);
-        const fallbackHtml = generateSinglePageHTML(components, 1, 1);
-        resolve([{
-          html: fallbackHtml,
-          pageNumber: 1,
-          totalPages: 1
-        }]);
-      });
-
-    } catch (error) {
-      console.error('❌ Error in splitHTMLIntoPages:', error);
-      reject(error);
-    }
-  });
-};
-
-// Enhanced multi-page PDF generation with improved error handling and debugging
+// Simplified PDF generation that uses the processed content directly
 export const generateMultiPagePDF = async (htmlContent: string, filename?: string): Promise<void> => {
   try {
-    console.log('🚀 Using enhanced multi-page PDF generator');
+    console.log('🚀 Starting simplified multi-page PDF generation');
     console.log('📄 Content length:', htmlContent?.length || 0);
     
     if (!htmlContent || typeof htmlContent !== 'string' || !htmlContent.trim()) {
       throw new Error('Kein gültiger HTML-Inhalt zum Generieren des PDFs');
     }
     
-    // Try direct generation first to avoid double processing
-    try {
-      await generateDirectPDF(htmlContent, filename);
-      console.log('✅ Direct PDF generation completed successfully');
-      return;
-    } catch (directError) {
-      console.warn('⚠️ Direct PDF generation failed, trying enhanced generator:', directError);
-      // Fall back to enhanced generator
-      await generateEnhancedMultiPagePDF(htmlContent, filename);
-      console.log('✅ Enhanced multi-page PDF generation completed successfully');
-    }
+    // Use direct PDF generation without complex page splitting
+    // The content is already processed and ready for PDF generation
+    await generateDirectPDF(htmlContent, filename);
+    console.log('✅ PDF generation completed successfully');
     
   } catch (error) {
     console.error('❌ Multi-page PDF generation failed:', error);
@@ -131,37 +43,78 @@ export const generateMultiPagePDF = async (htmlContent: string, filename?: strin
   }
 };
 
-// Generate PDF from multi-page content with better error handling
+// Legacy function for backward compatibility - now just calls the simplified version
 export const generatePDFFromMultiPageContent = async (pages: PageContent[], filename?: string): Promise<void> => {
   try {
-    console.log('📄 Generating PDF from', pages?.length || 0, 'pages');
+    console.log('📄 Generating PDF from', pages?.length || 0, 'pages (legacy mode)');
     
     if (!pages || pages.length === 0) {
       throw new Error('Keine Seiten zum Generieren des PDFs vorhanden');
     }
     
-    // Validate pages
-    const validPages = pages.filter(page => page && page.html && page.html.trim());
-    if (validPages.length === 0) {
+    // Use the first page's HTML content for PDF generation
+    const firstPageHTML = pages[0]?.html;
+    if (!firstPageHTML) {
       throw new Error('Keine gültigen Seiten gefunden');
     }
     
-    console.log('📄 Using', validPages.length, 'valid pages out of', pages.length);
-    
-    // Use the first valid page's HTML as base and let the enhanced generator handle pagination
-    const firstPageHTML = validPages[0].html;
-    await generateEnhancedMultiPagePDF(firstPageHTML, filename);
-    
-    console.log('✅ PDF generated from multi-page content successfully');
+    await generateMultiPagePDF(firstPageHTML, filename);
+    console.log('✅ Legacy PDF generation completed successfully');
     
   } catch (error) {
-    console.error('❌ PDF generation from multi-page content failed:', error);
-    
-    let errorMessage = 'PDF-Generierung fehlgeschlagen.';
-    if (error instanceof Error && error.message.includes('Keine')) {
-      errorMessage = error.message;
-    }
-    
-    throw new Error(errorMessage);
+    console.error('❌ Legacy PDF generation failed:', error);
+    throw error;
   }
+};
+
+// Simplified page splitting for preview purposes only
+export const splitHTMLIntoPages = async (htmlContent: string): Promise<PageContent[]> => {
+  return new Promise((resolve) => {
+    console.log('📄 Simplified HTML page splitting for preview...');
+    
+    try {
+      if (!htmlContent || typeof htmlContent !== 'string') {
+        console.warn('⚠️ Invalid HTML content for splitting');
+        resolve([{
+          html: '<div>No content available</div>',
+          pageNumber: 1,
+          totalPages: 1
+        }]);
+        return;
+      }
+      
+      // Simple estimation based on content length
+      const textContent = htmlContent.replace(/<[^>]*>/g, '').trim();
+      const CHARS_PER_PAGE = 3000;
+      const estimatedPages = Math.max(1, Math.min(5, Math.ceil(textContent.length / CHARS_PER_PAGE)));
+      
+      console.log('📄 Estimated pages for preview:', estimatedPages);
+
+      const pages: PageContent[] = [];
+      
+      // Create pages for preview (actual PDF will be generated differently)
+      for (let i = 0; i < estimatedPages; i++) {
+        const pageIndicator = estimatedPages > 1 ? `
+          <div style="position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.1); padding: 5px 10px; font-size: 10px; border-radius: 3px;">
+            Seite ${i + 1} von ${estimatedPages}
+          </div>
+        ` : '';
+        
+        pages.push({
+          html: htmlContent + pageIndicator,
+          pageNumber: i + 1,
+          totalPages: estimatedPages
+        });
+      }
+
+      resolve(pages);
+    } catch (error) {
+      console.error('❌ Error in simplified page splitting:', error);
+      resolve([{
+        html: htmlContent,
+        pageNumber: 1,
+        totalPages: 1
+      }]);
+    }
+  });
 };

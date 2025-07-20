@@ -21,6 +21,7 @@ import { MultiPagePreview } from '@/components/pdf-templates/MultiPagePreview';
 import { generateEnhancedMultiPagePDF } from '@/utils/enhancedPDFGenerator';
 import { generateDirectPDF } from '@/utils/directPDFGenerator';
 import { integrateFooterIntoContent } from '@/utils/contentProcessor';
+import { generateMultiPagePDF } from '@/utils/multiPagePDFGenerator';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -314,12 +315,23 @@ export default function PDFTemplates() {
 
   const handleDownloadPDF = async () => {
     try {
+      console.log('🚀 Starting PDF download...');
+      console.log('📄 Processed content length:', processedContent?.length || 0);
+      
+      if (!processedContent || !processedContent.trim()) {
+        toast({
+          title: "Fehler beim PDF-Export",
+          description: "Kein Inhalt zum Exportieren vorhanden.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Generate filename
       const filename = `${templateName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Use the direct PDF generator with the already processed content
-      // This avoids double processing that was causing empty PDFs
-      await generateDirectPDF(processedContent, filename);
+      // Use the simplified multi-page PDF generator
+      await generateMultiPagePDF(processedContent, filename);
 
       toast({
         title: "PDF erfolgreich erstellt",
@@ -327,10 +339,10 @@ export default function PDFTemplates() {
       });
 
     } catch (error) {
-      console.error('PDF generation error:', error);
+      console.error('❌ PDF generation error:', error);
       toast({
         title: "Fehler beim PDF-Export",
-        description: "Das PDF konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+        description: error instanceof Error ? error.message : "Das PDF konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       });
     }

@@ -18,12 +18,6 @@ export const generateMultiPagePDF = async (htmlContent: string, filename?: strin
     
     console.log('Content split into', result.totalPages, 'pages');
     
-    // WORKAROUND: Always remove the last page to prevent empty pages
-    if (result.pages.length > 1) {
-      result.pages.pop(); // Remove last page
-      console.log('Removed last page as workaround, now have', result.pages.length, 'pages');
-    }
-    
     if (result.pages.length === 1) {
       // Single page - direct generation
       await generateSinglePagePDF(result.pages[0].html, filename, html2pdf);

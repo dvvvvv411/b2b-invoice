@@ -125,23 +125,23 @@ const splitContentIntelligently = (contentDiv: HTMLElement, baseStyles: string, 
     console.log(`Element ${i + 1}: height=${elementHeight}, margin=${marginBottom}, total=${totalElementHeight}`);
     
     // Skip elements with no meaningful height
-    if (totalElementHeight <= 5) {
-      console.log(`Skipping tiny element ${i + 1}`);
+    if (totalElementHeight <= 0) {
+      console.log(`Skipping empty element ${i + 1}`);
       continue;
     }
     
     // Check if adding this element would exceed page height
-    if (currentPageHeight + totalElementHeight > AVAILABLE_HEIGHT && currentPageElements.length > 0) {
-      // Create page with current elements
+    if (currentPageHeight + totalElementHeight > AVAILABLE_HEIGHT && currentPageElements.length > 0 && currentPageHeight > 0) {
+      // Create page with current elements only if page has content
       console.log(`Creating page ${pageNumber} with ${currentPageElements.length} elements, height: ${currentPageHeight}`);
       
       const pageContent = currentPageElements.map(el => el.outerHTML).join('\n');
-      const pageHtml = createMultiPageHTML(baseStyles, pageContent, footerContent, pageNumber, pages.length + 1);
+      const pageHtml = createMultiPageHTML(baseStyles, pageContent, footerContent, pageNumber, estimatedPages);
       
       pages.push({
         html: pageHtml,
         pageNumber: pageNumber,
-        totalPages: pages.length + 1
+        totalPages: estimatedPages
       });
 
       // Start new page
@@ -155,68 +155,43 @@ const splitContentIntelligently = (contentDiv: HTMLElement, baseStyles: string, 
     }
   }
 
-  // Handle remaining elements - CRITICAL FIX: Check if they fit on previous page
-  if (currentPageElements.length > 0) {
-    if (pages.length > 0 && currentPageHeight < 300) {
-      // Try to fit remaining small elements on the last page
-      console.log(`Attempting to add ${currentPageElements.length} remaining elements (height: ${currentPageHeight}) to last page`);
-      const lastPage = pages[pages.length - 1];
-      const lastPageDoc = new DOMParser().parseFromString(lastPage.html, 'text/html');
-      const lastPageContent = lastPageDoc.querySelector('.page-content')?.innerHTML || '';
-      const additionalContent = currentPageElements.map(el => el.outerHTML).join('\n');
-      
-      // Combine content
-      const combinedContent = lastPageContent + '\n' + additionalContent;
-      const updatedPageHtml = createMultiPageHTML(baseStyles, combinedContent, footerContent, pages.length, pages.length);
-      
-      pages[pages.length - 1] = {
-        html: updatedPageHtml,
-        pageNumber: pages.length,
-        totalPages: pages.length
-      };
-      
-      console.log(`Successfully merged remaining elements into last page`);
-    } else if (currentPageHeight > 50) {
-      // Only create new page if there's substantial content
-      console.log(`Creating final page ${pageNumber} with ${currentPageElements.length} elements, height: ${currentPageHeight}`);
-      
-      const pageContent = currentPageElements.map(el => el.outerHTML).join('\n');
-      const pageHtml = createMultiPageHTML(baseStyles, pageContent, footerContent, pageNumber, pageNumber);
-      
-      pages.push({
-        html: pageHtml,
-        pageNumber: pageNumber,
-        totalPages: pageNumber
-      });
-    } else {
-      console.log(`Discarding ${currentPageElements.length} elements with minimal height: ${currentPageHeight}`);
-    }
+  // Handle remaining elements in last page - only if there's substantial content
+  if (currentPageElements.length > 0 && currentPageHeight > 200) { // Minimum height threshold
+    console.log(`Creating final page ${pageNumber} with ${currentPageElements.length} elements, height: ${currentPageHeight}`);
+    
+    const pageContent = currentPageElements.map(el => el.outerHTML).join('\n');
+    const pageHtml = createMultiPageHTML(baseStyles, pageContent, footerContent, pageNumber, estimatedPages);
+    
+    pages.push({
+      html: pageHtml,
+      pageNumber: pageNumber,
+      totalPages: estimatedPages
+    });
+  } else if (currentPageElements.length > 0 && pages.length > 0) {
+    // Add small remaining elements to the last page instead of creating a new one
+    console.log(`Adding ${currentPageElements.length} small elements to previous page instead of creating new page`);
+    const lastPage = pages[pages.length - 1];
+    const lastPageDoc = new DOMParser().parseFromString(lastPage.html, 'text/html');
+    const lastPageContent = lastPageDoc.querySelector('.page-content')?.innerHTML || '';
+    const additionalContent = currentPageElements.map(el => el.outerHTML).join('\n');
+    
+    const updatedContent = lastPageContent + '\n' + additionalContent;
+    const updatedPageHtml = createMultiPageHTML(baseStyles, updatedContent, footerContent, pages.length, estimatedPages);
+    
+    pages[pages.length - 1] = {
+      html: updatedPageHtml,
+      pageNumber: pages.length,
+      totalPages: estimatedPages
+    };
   }
 
-  // Final cleanup: ensure no empty pages and correct page numbering
-  const validPages = pages.filter(page => {
-    const doc = new DOMParser().parseFromString(page.html, 'text/html');
-    const content = doc.querySelector('.page-content')?.innerHTML?.trim() || '';
-    return content.length > 100; // Must have substantial content
+  // Update total pages for all pages
+  const actualTotalPages = pages.length;
+  pages.forEach(page => {
+    page.totalPages = actualTotalPages;
   });
 
-  // Renumber pages correctly
-  validPages.forEach((page, index) => {
-    page.pageNumber = index + 1;
-    page.totalPages = validPages.length;
-    
-    // Update HTML with correct page numbers
-    const doc = new DOMParser().parseFromString(page.html, 'text/html');
-    const footer = doc.querySelector('.pdf-footer');
-    if (footer) {
-      const footerText = footer.textContent?.replace(/Seite \d+ von \d+/, `Seite ${index + 1} von ${validPages.length}`) || '';
-      footer.textContent = footerText;
-      page.html = doc.documentElement.outerHTML;
-    }
-  });
-
-  console.log(`Final result: ${validPages.length} valid pages after cleanup`);
-  return validPages;
+  return pages;
 };
 
 const createSinglePageHTML = (baseStyles: string, content: string, footer: string, pageNum: number, totalPages: number): string => {

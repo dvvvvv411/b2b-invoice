@@ -67,7 +67,7 @@ export const splitContentIntoPages = async (htmlContent: string): Promise<SplitR
 
           const pages: ContentPage[] = [];
 
-          if (estimatedPages === 1 || totalHeight <= AVAILABLE_HEIGHT) {
+          if (totalHeight <= AVAILABLE_HEIGHT) {
             // Single page - no splitting needed
             console.log('Creating single page');
             const pageHtml = createSinglePageHTML(baseStyles, mainContent, footerContent, 1, 1);
@@ -130,8 +130,9 @@ const splitContentIntelligently = (contentDiv: HTMLElement, baseStyles: string, 
       continue;
     }
     
-    // Check if adding this element would exceed page height
-    if (currentPageHeight + totalElementHeight > AVAILABLE_HEIGHT && currentPageElements.length > 0 && currentPageHeight > 0) {
+    // Check if adding this element would exceed page height OR if element itself is too big
+    if ((currentPageHeight + totalElementHeight > AVAILABLE_HEIGHT && currentPageElements.length > 0 && currentPageHeight > 0) || 
+        (totalElementHeight > AVAILABLE_HEIGHT && currentPageElements.length === 0)) {
       // Create page with current elements only if page has content
       console.log(`Creating page ${pageNumber} with ${currentPageElements.length} elements, height: ${currentPageHeight}`);
       

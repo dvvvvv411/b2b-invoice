@@ -124,9 +124,15 @@ const splitContentIntelligently = (contentDiv: HTMLElement, baseStyles: string, 
     
     console.log(`Element ${i + 1}: height=${elementHeight}, margin=${marginBottom}, total=${totalElementHeight}`);
     
+    // Skip elements with no meaningful height
+    if (totalElementHeight <= 0) {
+      console.log(`Skipping empty element ${i + 1}`);
+      continue;
+    }
+    
     // Check if adding this element would exceed page height
     if (currentPageHeight + totalElementHeight > AVAILABLE_HEIGHT && currentPageElements.length > 0) {
-      // Create page with current elements
+      // Create page with current elements only if they have content
       console.log(`Creating page ${pageNumber} with ${currentPageElements.length} elements, height: ${currentPageHeight}`);
       
       const pageContent = currentPageElements.map(el => el.outerHTML).join('\n');
@@ -150,7 +156,7 @@ const splitContentIntelligently = (contentDiv: HTMLElement, baseStyles: string, 
   }
 
   // Handle remaining elements in last page
-  if (currentPageElements.length > 0) {
+  if (currentPageElements.length > 0 && currentPageHeight > 0) {
     console.log(`Creating final page ${pageNumber} with ${currentPageElements.length} elements, height: ${currentPageHeight}`);
     
     const pageContent = currentPageElements.map(el => el.outerHTML).join('\n');

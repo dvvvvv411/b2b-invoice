@@ -110,52 +110,60 @@ const createOptimizedCombinedDocument = (pages: any[]): string => {
   const baseStyles = firstPageDoc.querySelector('style')?.textContent || '';
   
   // Extract page contents without creating empty pages
-  const pageContents = pages.map((page, index) => {
-    const doc = new DOMParser().parseFromString(page.html, 'text/html');
-    const content = doc.querySelector('.page-content')?.innerHTML || '';
-    const footer = doc.querySelector('.pdf-footer')?.innerHTML || '';
-    
-    console.log(`Processing page ${index + 1}, content length:`, content.length);
-    
-    return `
-      <div class="pdf-page ${index > 0 ? 'pdf-page-start' : ''}" style="
-        width: ${A4_WIDTH}px;
-        min-height: ${A4_HEIGHT}px;
-        height: ${A4_HEIGHT}px;
-        position: relative;
-        box-sizing: border-box;
-        overflow: hidden;
-        ${index > 0 ? 'page-break-before: always;' : ''}
-      ">
-        <div class="page-content pdf-no-break" style="
-          padding: 40px;
-          height: ${A4_HEIGHT - 140}px;
+  const pageContents = pages
+    .filter((page, index) => {
+      const doc = new DOMParser().parseFromString(page.html, 'text/html');
+      const content = doc.querySelector('.page-content')?.innerHTML || '';
+      const hasContent = content.trim().length > 50; // Minimum meaningful content
+      console.log(`Page ${index + 1} content check - length: ${content.length}, hasContent: ${hasContent}`);
+      return hasContent;
+    })
+    .map((page, index) => {
+      const doc = new DOMParser().parseFromString(page.html, 'text/html');
+      const content = doc.querySelector('.page-content')?.innerHTML || '';
+      const footer = doc.querySelector('.pdf-footer')?.innerHTML || '';
+      
+      console.log(`Processing page ${index + 1}, content length:`, content.length);
+      
+      return `
+        <div class="pdf-page ${index > 0 ? 'pdf-page-start' : ''}" style="
+          width: ${A4_WIDTH}px;
+          min-height: ${A4_HEIGHT}px;
+          height: ${A4_HEIGHT}px;
+          position: relative;
           box-sizing: border-box;
           overflow: hidden;
+          ${index > 0 ? 'page-break-before: always;' : ''}
         ">
-          ${content}
+          <div class="page-content pdf-no-break" style="
+            padding: 40px;
+            height: ${A4_HEIGHT - 140}px;
+            box-sizing: border-box;
+            overflow: hidden;
+          ">
+            ${content}
+          </div>
+          <div class="pdf-footer pdf-no-break" style="
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #f5f5f5;
+            padding: 10px;
+            text-align: center;
+            font-size: 10px;
+            border-top: 1px solid #ddd;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">
+            ${footer}
+          </div>
         </div>
-        <div class="pdf-footer pdf-no-break" style="
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 60px;
-          background: #f5f5f5;
-          padding: 10px;
-          text-align: center;
-          font-size: 10px;
-          border-top: 1px solid #ddd;
-          box-sizing: border-box;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          ${footer}
-        </div>
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('');
 
   const combinedDocument = `
     <!DOCTYPE html>

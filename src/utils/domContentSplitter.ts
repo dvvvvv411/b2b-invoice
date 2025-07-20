@@ -23,6 +23,8 @@ export interface SplitResult {
 export const splitContentIntoPages = async (htmlContent: string): Promise<SplitResult> => {
   return new Promise((resolve, reject) => {
     try {
+      console.log('Starting content splitting process');
+      
       // Extract components from HTML
       const baseStyles = htmlContent.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
       const footerContent = htmlContent.match(/<div class="pdf-footer">[\s\S]*?<\/div>/i)?.[0] || '';
@@ -30,6 +32,8 @@ export const splitContentIntoPages = async (htmlContent: string): Promise<SplitR
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
         .replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '')
         .replace(/<div class="pdf-footer">[\s\S]*?<\/div>/gi, '');
+
+      console.log('Extracted content lengths - styles:', baseStyles.length, 'footer:', footerContent.length, 'main:', mainContent.length);
 
       // Create temporary container for measurement
       const measureContainer = document.createElement('div');
@@ -53,84 +57,119 @@ export const splitContentIntoPages = async (htmlContent: string): Promise<SplitR
       
       document.body.appendChild(measureContainer);
 
-      // Wait for content to render
+      // Wait for content to render and fonts to load
       setTimeout(() => {
-        const totalHeight = contentDiv.scrollHeight;
-        const numberOfPages = Math.max(1, Math.ceil(totalHeight / AVAILABLE_HEIGHT));
+        try {
+          const totalHeight = contentDiv.scrollHeight;
+          const estimatedPages = Math.max(1, Math.ceil(totalHeight / AVAILABLE_HEIGHT));
 
-        console.log('DOM measurement - Total height:', totalHeight, 'Available per page:', AVAILABLE_HEIGHT, 'Pages needed:', numberOfPages);
+          console.log('DOM measurement - Total height:', totalHeight, 'Available per page:', AVAILABLE_HEIGHT, 'Estimated pages:', estimatedPages);
 
-        const pages: ContentPage[] = [];
+          const pages: ContentPage[] = [];
 
-        if (numberOfPages === 1) {
-          // Single page - no splitting needed
-          const pageHtml = createSinglePageHTML(baseStyles, mainContent, footerContent, 1, 1);
-          pages.push({
-            html: pageHtml,
-            pageNumber: 1,
-            totalPages: 1
-          });
-        } else {
-          // Multiple pages - split content by analyzing DOM elements
-          const elements = Array.from(contentDiv.children);
-          let currentPageHeight = 0;
-          let currentPageElements: Element[] = [];
-          let pageNumber = 1;
-
-          for (const element of elements) {
-            const elementHeight = (element as HTMLElement).offsetHeight;
-            
-            // Check if adding this element would exceed page height
-            if (currentPageHeight + elementHeight > AVAILABLE_HEIGHT && currentPageElements.length > 0) {
-              // Create page with current elements
-              const pageContent = currentPageElements.map(el => el.outerHTML).join('\n');
-              const pageHtml = createMultiPageHTML(baseStyles, pageContent, footerContent, pageNumber, numberOfPages);
-              
-              pages.push({
-                html: pageHtml,
-                pageNumber: pageNumber,
-                totalPages: numberOfPages
-              });
-
-              // Start new page
-              currentPageElements = [element];
-              currentPageHeight = elementHeight;
-              pageNumber++;
-            } else {
-              // Add element to current page
-              currentPageElements.push(element);
-              currentPageHeight += elementHeight;
-            }
-          }
-
-          // Handle remaining elements in last page
-          if (currentPageElements.length > 0) {
-            const pageContent = currentPageElements.map(el => el.outerHTML).join('\n');
-            const pageHtml = createMultiPageHTML(baseStyles, pageContent, footerContent, pageNumber, numberOfPages);
-            
+          if (estimatedPages === 1 || totalHeight <= AVAILABLE_HEIGHT) {
+            // Single page - no splitting needed
+            console.log('Creating single page');
+            const pageHtml = createSinglePageHTML(baseStyles, mainContent, footerContent, 1, 1);
             pages.push({
               html: pageHtml,
-              pageNumber: pageNumber,
-              totalPages: numberOfPages
+              pageNumber: 1,
+              totalPages: 1
             });
+          } else {
+            // Multiple pages - split content intelligently
+            console.log('Splitting into multiple pages');
+            const splitPages = splitContentIntelligently(contentDiv, baseStyles, footerContent, estimatedPages);
+            pages.push(...splitPages);
           }
+
+          // Clean up
+          document.body.removeChild(measureContainer);
+
+          console.log('Content splitting completed. Total pages:', pages.length);
+
+          resolve({
+            pages,
+            totalPages: pages.length
+          });
+
+        } catch (error) {
+          document.body.removeChild(measureContainer);
+          throw error;
         }
-
-        // Clean up
-        document.body.removeChild(measureContainer);
-
-        resolve({
-          pages,
-          totalPages: numberOfPages
-        });
-
-      }, 500);
+      }, 750); // Increased timeout for better rendering
 
     } catch (error) {
       console.error('Content splitting failed:', error);
       reject(error);
     }
   });
+};
+
+const splitContentIntelligently = (contentDiv: HTMLElement, baseStyles: string, footerContent: string, estimatedPages: number): ContentPage[] => {
+  const pages: ContentPage[] = [];
+  const elements = Array.from(contentDiv.children);
+  
+  console.log('Splitting', elements.length, 'elements across', estimatedPages, 'estimated pages');
+  
+  let currentPageHeight = 0;
+  let currentPageElements: Element[] = [];
+  let pageNumber = 1;
+
+  for (let i = 0; i < elements.length; i++) {
+    const element = elements[i] as HTMLElement;
+    const elementHeight = element.offsetHeight;
+    const marginBottom = parseInt(window.getComputedStyle(element).marginBottom) || 0;
+    const totalElementHeight = elementHeight + marginBottom;
+    
+    console.log(`Element ${i + 1}: height=${elementHeight}, margin=${marginBottom}, total=${totalElementHeight}`);
+    
+    // Check if adding this element would exceed page height
+    if (currentPageHeight + totalElementHeight > AVAILABLE_HEIGHT && currentPageElements.length > 0) {
+      // Create page with current elements
+      console.log(`Creating page ${pageNumber} with ${currentPageElements.length} elements, height: ${currentPageHeight}`);
+      
+      const pageContent = currentPageElements.map(el => el.outerHTML).join('\n');
+      const pageHtml = createMultiPageHTML(baseStyles, pageContent, footerContent, pageNumber, estimatedPages);
+      
+      pages.push({
+        html: pageHtml,
+        pageNumber: pageNumber,
+        totalPages: estimatedPages
+      });
+
+      // Start new page
+      currentPageElements = [element];
+      currentPageHeight = totalElementHeight;
+      pageNumber++;
+    } else {
+      // Add element to current page
+      currentPageElements.push(element);
+      currentPageHeight += totalElementHeight;
+    }
+  }
+
+  // Handle remaining elements in last page
+  if (currentPageElements.length > 0) {
+    console.log(`Creating final page ${pageNumber} with ${currentPageElements.length} elements, height: ${currentPageHeight}`);
+    
+    const pageContent = currentPageElements.map(el => el.outerHTML).join('\n');
+    const pageHtml = createMultiPageHTML(baseStyles, pageContent, footerContent, pageNumber, estimatedPages);
+    
+    pages.push({
+      html: pageHtml,
+      pageNumber: pageNumber,
+      totalPages: estimatedPages
+    });
+  }
+
+  // Update total pages for all pages
+  const actualTotalPages = pages.length;
+  pages.forEach(page => {
+    page.totalPages = actualTotalPages;
+  });
+
+  return pages;
 };
 
 const createSinglePageHTML = (baseStyles: string, content: string, footer: string, pageNum: number, totalPages: number): string => {
@@ -152,6 +191,7 @@ const createSinglePageHTML = (baseStyles: string, content: string, footer: strin
           color: #000;
           position: relative;
           background: white;
+          overflow: hidden;
         }
         .page-content {
           padding: ${PAGE_MARGIN}px;
@@ -208,6 +248,7 @@ const createMultiPageHTML = (baseStyles: string, content: string, footer: string
           color: #000;
           position: relative;
           background: white;
+          overflow: hidden;
         }
         .page-content {
           padding: ${PAGE_MARGIN}px;

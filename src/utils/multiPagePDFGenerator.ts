@@ -22,8 +22,8 @@ export const generateMultiPagePDF = async (htmlContent: string, filename?: strin
       // Single page - direct generation
       await generateSinglePagePDF(result.pages[0].html, filename, html2pdf);
     } else {
-      // Multi-page - combine all pages into one document
-      await generateCombinedPDF(result.pages, filename, html2pdf);
+      // Multi-page - use improved generation strategy
+      await generateImprovedMultiPagePDF(result.pages, filename, html2pdf);
     }
     
     console.log('Multi-page PDF generated successfully');
@@ -61,9 +61,11 @@ const generateSinglePagePDF = async (pageHtml: string, filename: string | undefi
   await html2pdf().set(options).from(element).save();
 };
 
-const generateCombinedPDF = async (pages: any[], filename: string | undefined, html2pdf: any): Promise<void> => {
-  // Create combined document with proper page breaks
-  const combinedHtml = createCombinedDocument(pages);
+const generateImprovedMultiPagePDF = async (pages: any[], filename: string | undefined, html2pdf: any): Promise<void> => {
+  console.log('Generating improved multi-page PDF with', pages.length, 'pages');
+  
+  // Create optimized combined document
+  const combinedHtml = createOptimizedCombinedDocument(pages);
   
   const options = {
     margin: 0,
@@ -75,7 +77,9 @@ const generateCombinedPDF = async (pages: any[], filename: string | undefined, h
       letterRendering: true,
       allowTaint: false,
       logging: false,
-      width: A4_WIDTH
+      width: A4_WIDTH,
+      windowWidth: A4_WIDTH,
+      windowHeight: A4_HEIGHT * pages.length
     },
     jsPDF: { 
       unit: 'px', 
@@ -84,44 +88,54 @@ const generateCombinedPDF = async (pages: any[], filename: string | undefined, h
     },
     pagebreak: { 
       mode: 'css',
-      before: '.pdf-page-break'
+      before: '.pdf-page-start',
+      avoid: '.pdf-no-break'
     }
   };
 
   const element = document.createElement('div');
   element.innerHTML = combinedHtml;
   
+  // Add debugging
+  console.log('Combined HTML structure:', element.innerHTML.substring(0, 500) + '...');
+  
   await html2pdf().set(options).from(element).save();
 };
 
-const createCombinedDocument = (pages: any[]): string => {
+const createOptimizedCombinedDocument = (pages: any[]): string => {
+  console.log('Creating optimized combined document for', pages.length, 'pages');
+  
   // Extract base styles from first page
   const firstPageDoc = new DOMParser().parseFromString(pages[0].html, 'text/html');
   const baseStyles = firstPageDoc.querySelector('style')?.textContent || '';
   
-  // Extract page contents
+  // Extract page contents without creating empty pages
   const pageContents = pages.map((page, index) => {
     const doc = new DOMParser().parseFromString(page.html, 'text/html');
     const content = doc.querySelector('.page-content')?.innerHTML || '';
     const footer = doc.querySelector('.pdf-footer')?.innerHTML || '';
     
+    console.log(`Processing page ${index + 1}, content length:`, content.length);
+    
     return `
-      <div class="pdf-page ${index > 0 ? 'pdf-page-break' : ''}" style="
+      <div class="pdf-page ${index > 0 ? 'pdf-page-start' : ''}" style="
         width: ${A4_WIDTH}px;
+        min-height: ${A4_HEIGHT}px;
         height: ${A4_HEIGHT}px;
         position: relative;
-        page-break-after: ${index < pages.length - 1 ? 'always' : 'avoid'};
-        page-break-inside: avoid;
+        box-sizing: border-box;
+        overflow: hidden;
+        ${index > 0 ? 'page-break-before: always;' : ''}
       ">
-        <div class="page-content" style="
+        <div class="page-content pdf-no-break" style="
           padding: 40px;
           height: ${A4_HEIGHT - 140}px;
-          overflow: hidden;
           box-sizing: border-box;
+          overflow: hidden;
         ">
           ${content}
         </div>
-        <div class="pdf-footer" style="
+        <div class="pdf-footer pdf-no-break" style="
           position: absolute;
           bottom: 0;
           left: 0;
@@ -141,9 +155,9 @@ const createCombinedDocument = (pages: any[]): string => {
         </div>
       </div>
     `;
-  }).join('\n');
+  }).join('');
 
-  return `
+  const combinedDocument = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -158,12 +172,23 @@ const createCombinedDocument = (pages: any[]): string => {
           line-height: 1.4;
           color: #000;
         }
-        .pdf-page-break {
+        .pdf-page-start {
           page-break-before: always;
+        }
+        .pdf-no-break {
+          page-break-inside: avoid;
         }
         @page {
           margin: 0;
           size: ${A4_WIDTH}px ${A4_HEIGHT}px;
+        }
+        @media print {
+          .pdf-page-start {
+            page-break-before: always;
+          }
+          .pdf-no-break {
+            page-break-inside: avoid;
+          }
         }
       </style>
     </head>
@@ -172,6 +197,9 @@ const createCombinedDocument = (pages: any[]): string => {
     </body>
     </html>
   `;
+
+  console.log('Combined document created, total length:', combinedDocument.length);
+  return combinedDocument;
 };
 
 // Legacy function for backward compatibility

@@ -27,12 +27,20 @@ export const splitContentIntoPages = async (htmlContent: string): Promise<SplitR
       
       // Extract components from HTML
       const baseStyles = htmlContent.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
-      // Support both pdf-footer and footer classes
-      const footerContent = htmlContent.match(/<div class="(pdf-)?footer">[\s\S]*?<\/div>/i)?.[0] || '';
+      
+      // Support both pdf-footer and footer classes - DEBUG
+      const footerMatch = htmlContent.match(/<div class="footer"[^>]*>[\s\S]*?<\/div>/i) || 
+                         htmlContent.match(/<div class="pdf-footer"[^>]*>[\s\S]*?<\/div>/i);
+      const footerContent = footerMatch?.[0] || '';
+      
+      console.log('FOOTER DEBUG - Found footer:', !!footerContent, 'Content length:', footerContent.length);
+      console.log('FOOTER DEBUG - Footer content:', footerContent.substring(0, 200));
+      
       const mainContent = htmlContent
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
         .replace(/<\/?(!DOCTYPE|html|head|body)[^>]*>/gi, '')
-        .replace(/<div class="(pdf-)?footer">[\s\S]*?<\/div>/gi, '');
+        .replace(/<div class="footer"[^>]*>[\s\S]*?<\/div>/gi, '')
+        .replace(/<div class="pdf-footer"[^>]*>[\s\S]*?<\/div>/gi, '');
 
       console.log('Extracted content lengths - styles:', baseStyles.length, 'footer:', footerContent.length, 'main:', mainContent.length);
 
@@ -246,7 +254,7 @@ const createSinglePageHTML = (baseStyles: string, content: string, footer: strin
         ${content}
       </div>
       <div class="pdf-footer">
-        ${footer.replace(/<\/?div[^>]*>/gi, '')} | Seite ${pageNum} von ${totalPages}
+        ${footer ? footer.replace(/<\/?div[^>]*>/gi, '') : `Seite ${pageNum} von ${totalPages}`}
       </div>
     </body>
     </html>
@@ -303,7 +311,7 @@ const createMultiPageHTML = (baseStyles: string, content: string, footer: string
         ${content}
       </div>
       <div class="pdf-footer">
-        ${footer.replace(/<\/?div[^>]*>/gi, '')} | Seite ${pageNum} von ${totalPages}
+        ${footer ? footer.replace(/<\/?div[^>]*>/gi, '') : `Seite ${pageNum} von ${totalPages}`}
       </div>
     </body>
     </html>

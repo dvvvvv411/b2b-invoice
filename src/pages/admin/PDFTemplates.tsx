@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -20,7 +19,6 @@ import { replaceTemplateData, TemplateData } from '@/utils/templateDataReplacer'
 import { replacePlaceholdersWithRealData, SelectedData as LivePreviewData } from '@/utils/livePreviewReplacer';
 import { MultiPagePreview } from '@/components/pdf-templates/MultiPagePreview';
 import { generateMultiPagePDF } from '@/utils/multiPagePDFGenerator';
-import { AITemplateChat } from '@/components/ai-assistant/AITemplateChat';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -321,16 +319,6 @@ export default function PDFTemplates() {
     }
   };
 
-  // Handle AI code application
-  const handleAICodeApply = useCallback((code: string) => {
-    console.log('Applying AI suggested code to editor');
-    setHtmlContent(code);
-    toast({
-      title: "AI Code angewendet",
-      description: "Der AI-Vorschlag wurde automatisch in den Editor übernommen.",
-    });
-  }, []);
-
   // Process content when htmlContent or selectedData changes
   useEffect(() => {
     let content = htmlContent;
@@ -397,7 +385,7 @@ export default function PDFTemplates() {
       <div className="flex items-center justify-between flex-shrink-0">
         <div>
           <h1 className="text-3xl font-bold text-foreground">PDF Templates</h1>
-          <p className="text-muted-foreground">Erstellen und verwalten Sie PDF-Vorlagen mit automatischer AI-Unterstützung</p>
+          <p className="text-muted-foreground">Erstellen und verwalten Sie PDF-Vorlagen mit Multi-Seiten-Support</p>
         </div>
         
         <div className="flex items-center space-x-3">
@@ -481,9 +469,9 @@ export default function PDFTemplates() {
         onDataChange={setSelectedData}
       />
 
-      {/* Main Content - Three Column Layout */}
-      <div className="grid grid-cols-3 gap-6 flex-1 min-h-0">
-        {/* Left Column: HTML Editor */}
+      {/* Main Content - Split Screen */}
+      <div className="grid grid-cols-2 gap-6 flex-1 min-h-0">
+        {/* HTML Editor */}
         <Card className="p-4 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">HTML Editor</h3>
@@ -506,7 +494,7 @@ export default function PDFTemplates() {
               theme="vs-dark"
               options={{
                 minimap: { enabled: false },
-                fontSize: 12,
+                fontSize: 14,
                 lineNumbers: 'on',
                 wordWrap: 'on',
                 scrollBeyondLastLine: false,
@@ -516,16 +504,7 @@ export default function PDFTemplates() {
           </div>
         </Card>
 
-        {/* Middle Column: AI Assistant */}
-        <Card className="min-h-0">
-          <AITemplateChat 
-            htmlContent={htmlContent}
-            templateName={currentTemplate?.name}
-            onCodeApply={handleAICodeApply}
-          />
-        </Card>
-
-        {/* Right Column: Multi-Page Preview */}
+        {/* Multi-Page Preview */}
         <Card className="p-4 flex flex-col min-h-0">
           <h3 className="text-lg font-semibold mb-4">DIN A4 Multi-Seiten Vorschau</h3>
           

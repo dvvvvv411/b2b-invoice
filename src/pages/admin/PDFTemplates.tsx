@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -320,6 +321,16 @@ export default function PDFTemplates() {
     }
   };
 
+  // Handle AI code application
+  const handleAICodeApply = useCallback((code: string) => {
+    console.log('Applying AI suggested code to editor');
+    setHtmlContent(code);
+    toast({
+      title: "AI Code angewendet",
+      description: "Der AI-Vorschlag wurde automatisch in den Editor übernommen.",
+    });
+  }, []);
+
   // Process content when htmlContent or selectedData changes
   useEffect(() => {
     let content = htmlContent;
@@ -386,7 +397,7 @@ export default function PDFTemplates() {
       <div className="flex items-center justify-between flex-shrink-0">
         <div>
           <h1 className="text-3xl font-bold text-foreground">PDF Templates</h1>
-          <p className="text-muted-foreground">Erstellen und verwalten Sie PDF-Vorlagen mit Multi-Seiten-Support</p>
+          <p className="text-muted-foreground">Erstellen und verwalten Sie PDF-Vorlagen mit automatischer AI-Unterstützung</p>
         </div>
         
         <div className="flex items-center space-x-3">
@@ -510,7 +521,7 @@ export default function PDFTemplates() {
           <AITemplateChat 
             htmlContent={htmlContent}
             templateName={currentTemplate?.name}
-            onSuggestionApply={(suggestion) => setHtmlContent(suggestion)}
+            onCodeApply={handleAICodeApply}
           />
         </Card>
 

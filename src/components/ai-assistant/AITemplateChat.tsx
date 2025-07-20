@@ -1,21 +1,22 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Bot, User, Sparkles, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Trash2 } from 'lucide-react';
 import { useAITemplateAssistant, ChatMessage } from '@/hooks/useAITemplateAssistant';
 
 interface AITemplateChatProps {
   htmlContent?: string;
   templateName?: string;
-  onSuggestionApply?: (suggestion: string) => void;
+  onCodeApply?: (code: string) => void;
 }
 
 export const AITemplateChat: React.FC<AITemplateChatProps> = ({
   htmlContent,
   templateName,
-  onSuggestionApply,
+  onCodeApply,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const { messages, isLoading, sendMessage, clearMessages, addWelcomeMessage } = useAITemplateAssistant();
@@ -33,6 +34,20 @@ export const AITemplateChat: React.FC<AITemplateChatProps> = ({
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Auto-apply code when AI responds with code
+  useEffect(() => {
+    if (!onCodeApply || messages.length === 0) return;
+
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.role === 'assistant') {
+      const extractedCode = extractCodeFromMessage(lastMessage.content);
+      if (extractedCode) {
+        console.log('Auto-applying AI suggested code:', extractedCode.substring(0, 100) + '...');
+        onCodeApply(extractedCode);
+      }
+    }
+  }, [messages, onCodeApply]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -108,16 +123,10 @@ export const AITemplateChat: React.FC<AITemplateChatProps> = ({
                     )}
                     <div className="flex-1">
                       <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      {message.role === 'assistant' && onSuggestionApply && extractCodeFromMessage(message.content) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-2"
-                          onClick={() => onSuggestionApply!(extractCodeFromMessage(message.content)!)}
-                        >
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          Code anwenden
-                        </Button>
+                      {message.role === 'assistant' && extractCodeFromMessage(message.content) && (
+                        <div className="mt-2 text-xs text-green-600 bg-green-50 p-2 rounded">
+                          ✓ Code automatisch angewendet
+                        </div>
                       )}
                     </div>
                   </div>
@@ -146,7 +155,7 @@ export const AITemplateChat: React.FC<AITemplateChatProps> = ({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Fragen Sie nach Template-Hilfe..."
+            placeholder="Sagen Sie mir, was Sie ändern möchten..."
             disabled={isLoading}
             className="flex-1"
           />
@@ -160,7 +169,7 @@ export const AITemplateChat: React.FC<AITemplateChatProps> = ({
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Beispiele: "Wie kann ich eine Rechnung erstellen?", "Verbessere mein CSS", "Füge eine Fußzeile hinzu"
+          Beispiele: "Ändere die Farbe zu blau", "Füge eine Tabelle hinzu", "Verbessere das Design"
         </div>
       </CardContent>
     </Card>

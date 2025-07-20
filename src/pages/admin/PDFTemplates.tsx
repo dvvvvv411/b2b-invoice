@@ -187,17 +187,10 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 </body>
 </html>`;
 
-const DEFAULT_FOOTER = `<div class="pdf-footer">
-    {{ KANZLEI_NAME }} | {{ KANZLEI_STRASSE }}, {{ KANZLEI_PLZ }} {{ KANZLEI_STADT }} | 
-    Tel: {{ KANZLEI_TELEFON }} | E-Mail: {{ KANZLEI_EMAIL }} | 
-    Erstellt am {{ AKTUELLES_DATUM }}
-</div>`;
-
 export default function PDFTemplates() {
   const { templates, loading, createTemplate, updateTemplate, deleteTemplate, autoSaveTemplate } = usePDFTemplates();
   
   const [htmlContent, setHtmlContent] = useState(DEFAULT_TEMPLATE);
-  const [footerContent, setFooterContent] = useState(DEFAULT_FOOTER);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [currentTemplate, setCurrentTemplate] = useState<PDFTemplate | null>(null);
   const [templateName, setTemplateName] = useState('Neue Vorlage');
@@ -206,7 +199,6 @@ export default function PDFTemplates() {
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [processedContent, setProcessedContent] = useState(DEFAULT_TEMPLATE);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const footerAutoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Data selection state
   const [selectedData, setSelectedData] = useState<SelectedData>(() => {
@@ -238,27 +230,12 @@ export default function PDFTemplates() {
     }
     
     autoSaveTimeoutRef.current = setTimeout(async () => {
-      const success = await autoSaveTemplate(currentTemplate.id, htmlContent, footerContent);
+      const success = await autoSaveTemplate(currentTemplate.id, htmlContent);
       if (success) {
         console.log('Template auto-saved');
       }
     }, 10000); // 10 seconds
-  }, [autoSaveEnabled, isCreatingNew, currentTemplate, htmlContent, footerContent, autoSaveTemplate]);
-
-  const scheduleFooterAutoSave = useCallback(() => {
-    if (!autoSaveEnabled || isCreatingNew || !currentTemplate) return;
-    
-    if (footerAutoSaveTimeoutRef.current) {
-      clearTimeout(footerAutoSaveTimeoutRef.current);
-    }
-    
-    footerAutoSaveTimeoutRef.current = setTimeout(async () => {
-      const success = await autoSaveTemplate(currentTemplate.id, htmlContent, footerContent);
-      if (success) {
-        console.log('Footer auto-saved');
-      }
-    }, 5000); // 5 seconds for footer
-  }, [autoSaveEnabled, isCreatingNew, currentTemplate, htmlContent, footerContent, autoSaveTemplate]);
+  }, [autoSaveEnabled, isCreatingNew, currentTemplate, htmlContent, autoSaveTemplate]);
 
   useEffect(() => {
     scheduleAutoSave();
@@ -269,18 +246,9 @@ export default function PDFTemplates() {
     };
   }, [scheduleAutoSave]);
 
-  useEffect(() => {
-    scheduleFooterAutoSave();
-    return () => {
-      if (footerAutoSaveTimeoutRef.current) {
-        clearTimeout(footerAutoSaveTimeoutRef.current);
-      }
-    };
-  }, [scheduleFooterAutoSave]);
-
   const handleSaveTemplate = async () => {
     if (isCreatingNew) {
-      const newTemplate = await createTemplate(templateName, htmlContent, 'invoice', footerContent);
+      const newTemplate = await createTemplate(templateName, htmlContent, 'invoice');
       if (newTemplate) {
         setCurrentTemplate(newTemplate);
         setSelectedTemplate(newTemplate.id);
@@ -290,7 +258,6 @@ export default function PDFTemplates() {
       const success = await updateTemplate(currentTemplate.id, {
         name: templateName,
         html_content: htmlContent,
-        footer_html: footerContent,
       });
       if (success) {
         toast({
@@ -335,7 +302,6 @@ export default function PDFTemplates() {
 
   const handleNewTemplate = () => {
     setHtmlContent(DEFAULT_TEMPLATE);
-    setFooterContent(DEFAULT_FOOTER);
     setTemplateName('Neue Vorlage');
     setSelectedTemplate('');
     setCurrentTemplate(null);
@@ -346,7 +312,6 @@ export default function PDFTemplates() {
     const template = templates.find(t => t.id === templateId);
     if (template) {
       setHtmlContent(template.html_content);
-      setFooterContent(template.footer_html || DEFAULT_FOOTER);
       setTemplateName(template.name);
       setSelectedTemplate(templateId);
       setCurrentTemplate(template);
@@ -354,16 +319,9 @@ export default function PDFTemplates() {
     }
   };
 
-  // Process content when htmlContent, footerContent, or selectedData changes
+  // Process content when htmlContent or selectedData changes
   useEffect(() => {
     let content = htmlContent;
-    
-    // Combine main content with footer
-    const combinedContent = content.replace(
-      /<div class="pdf-footer">[\s\S]*?<\/div>/gi,
-      footerContent
-    );
-    content = combinedContent;
 
     // Check if Live Preview with real data is enabled
     if (selectedData.useRealData) {
@@ -419,7 +377,7 @@ export default function PDFTemplates() {
     }
 
     setProcessedContent(content);
-  }, [selectedData, htmlContent, footerContent, kanzleien, insolventeUnternehmen, kunden, autos, bankkonten, speditionen]);
+  }, [selectedData, htmlContent, kanzleien, insolventeUnternehmen, kunden, autos, bankkonten, speditionen]);
 
   return (
     <div className="p-6 space-y-6 h-screen overflow-hidden flex flex-col">
@@ -513,74 +471,38 @@ export default function PDFTemplates() {
 
       {/* Main Content - Split Screen */}
       <div className="grid grid-cols-2 gap-6 flex-1 min-h-0">
-        {/* Left Column - Editors */}
-        <div className="flex flex-col space-y-4 min-h-0">
-          {/* HTML Editor */}
-          <Card className="p-4 flex flex-col flex-1 min-h-0">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Hauptinhalt Editor</h3>
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                {!isCreatingNew && autoSaveEnabled && (
-                  <span>Auto-Save aktiviert (alle 10s)</span>
-                )}
-              </div>
+        {/* HTML Editor */}
+        <Card className="p-4 flex flex-col min-h-0">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">HTML Editor</h3>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              {!isCreatingNew && autoSaveEnabled && (
+                <span>Auto-Save aktiviert (alle 10s)</span>
+              )}
             </div>
-            
-            <div className="flex-1 border rounded-md overflow-hidden min-h-0">
-              <Editor
-                height="100%"
-                defaultLanguage="html"
-                value={htmlContent}
-                onChange={(value) => {
-                  const newContent = value || '';
-                  setHtmlContent(newContent);
-                }}
-                theme="vs-dark"
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  lineNumbers: 'on',
-                  wordWrap: 'on',
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                }}
-              />
-            </div>
-          </Card>
-
-          {/* Footer Editor */}
-          <Card className="p-4 flex flex-col min-h-0" style={{ height: '300px' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Fußzeile Editor</h3>
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                {!isCreatingNew && autoSaveEnabled && (
-                  <span>Auto-Save aktiviert (alle 5s)</span>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex-1 border rounded-md overflow-hidden min-h-0">
-              <Editor
-                height="100%"
-                defaultLanguage="html"
-                value={footerContent}
-                onChange={(value) => {
-                  const newContent = value || '';
-                  setFooterContent(newContent);
-                }}
-                theme="vs-dark"
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  lineNumbers: 'on',
-                  wordWrap: 'on',
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                }}
-              />
-            </div>
-          </Card>
-        </div>
+          </div>
+          
+          <div className="flex-1 border rounded-md overflow-hidden min-h-0">
+            <Editor
+              height="100%"
+              defaultLanguage="html"
+              value={htmlContent}
+              onChange={(value) => {
+                const newContent = value || '';
+                setHtmlContent(newContent);
+              }}
+              theme="vs-dark"
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                lineNumbers: 'on',
+                wordWrap: 'on',
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+              }}
+            />
+          </div>
+        </Card>
 
         {/* Multi-Page Preview */}
         <Card className="p-4 flex flex-col min-h-0">

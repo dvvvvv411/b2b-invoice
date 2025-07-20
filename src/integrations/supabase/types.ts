@@ -230,7 +230,6 @@ export type Database = {
       pdf_templates: {
         Row: {
           created_at: string | null
-          footer_html: string | null
           html_content: string
           id: string
           is_active: boolean | null
@@ -242,7 +241,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          footer_html?: string | null
           html_content: string
           id?: string
           is_active?: boolean | null
@@ -254,7 +252,6 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          footer_html?: string | null
           html_content?: string
           id?: string
           is_active?: boolean | null

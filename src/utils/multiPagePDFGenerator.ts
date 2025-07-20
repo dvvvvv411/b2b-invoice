@@ -18,10 +18,9 @@ export const generateMultiPagePDF = async (htmlContent: string, filename?: strin
     
     console.log('Content split into', result.totalPages, 'pages');
     
-    // WORKAROUND: Always remove the last page to prevent empty pages
-    if (result.pages.length > 1) {
-      result.pages.pop(); // Remove last page
-      console.log('Removed last page as workaround, now have', result.pages.length, 'pages');
+    // Use the split pages directly without workarounds
+    if (result.pages.length === 0) {
+      throw new Error('No valid pages generated');
     }
     
     if (result.pages.length === 1) {
@@ -70,8 +69,8 @@ const generateSinglePagePDF = async (pageHtml: string, filename: string | undefi
 const generateImprovedMultiPagePDF = async (pages: any[], filename: string | undefined, html2pdf: any): Promise<void> => {
   console.log('Generating improved multi-page PDF with', pages.length, 'pages');
   
-  // Create optimized combined document
-  const combinedHtml = createOptimizedCombinedDocument(pages);
+  // Create optimized combined document using the split result pages
+  const combinedHtml = createOptimizedCombinedDocument({ pages });
   
   const options = {
     margin: 0,
@@ -108,22 +107,15 @@ const generateImprovedMultiPagePDF = async (pages: any[], filename: string | und
   await html2pdf().set(options).from(element).save();
 };
 
-const createOptimizedCombinedDocument = (pages: any[]): string => {
-  console.log('Creating optimized combined document for', pages.length, 'pages');
+const createOptimizedCombinedDocument = (result: { pages: any[] }): string => {
+  console.log('Creating optimized combined document for', result.pages.length, 'pages');
   
   // Extract base styles from first page
-  const firstPageDoc = new DOMParser().parseFromString(pages[0].html, 'text/html');
+  const firstPageDoc = new DOMParser().parseFromString(result.pages[0].html, 'text/html');
   const baseStyles = firstPageDoc.querySelector('style')?.textContent || '';
   
-  // Extract page contents without creating empty pages
-  const pageContents = pages
-    .filter((page, index) => {
-      const doc = new DOMParser().parseFromString(page.html, 'text/html');
-      const content = doc.querySelector('.page-content')?.innerHTML || '';
-      const hasContent = content.trim().length > 50; // Minimum meaningful content
-      console.log(`Page ${index + 1} content check - length: ${content.length}, hasContent: ${hasContent}`);
-      return hasContent;
-    })
+  // Extract page contents - use all pages
+  const pageContents = result.pages
     .map((page, index) => {
       const doc = new DOMParser().parseFromString(page.html, 'text/html');
       const content = doc.querySelector('.page-content')?.innerHTML || '';

@@ -131,8 +131,8 @@ const splitContentIntelligently = (contentDiv: HTMLElement, baseStyles: string, 
     }
     
     // Check if adding this element would exceed page height
-    if (currentPageHeight + totalElementHeight > AVAILABLE_HEIGHT && currentPageElements.length > 0) {
-      // Create page with current elements only if they have content
+    if (currentPageHeight + totalElementHeight > AVAILABLE_HEIGHT && currentPageElements.length > 0 && currentPageHeight > 0) {
+      // Create page with current elements only if page has content
       console.log(`Creating page ${pageNumber} with ${currentPageElements.length} elements, height: ${currentPageHeight}`);
       
       const pageContent = currentPageElements.map(el => el.outerHTML).join('\n');
@@ -155,8 +155,8 @@ const splitContentIntelligently = (contentDiv: HTMLElement, baseStyles: string, 
     }
   }
 
-  // Handle remaining elements in last page
-  if (currentPageElements.length > 0 && currentPageHeight > 0) {
+  // Handle remaining elements in last page - only if there's substantial content
+  if (currentPageElements.length > 0 && currentPageHeight > 200) { // Minimum height threshold
     console.log(`Creating final page ${pageNumber} with ${currentPageElements.length} elements, height: ${currentPageHeight}`);
     
     const pageContent = currentPageElements.map(el => el.outerHTML).join('\n');
@@ -167,6 +167,22 @@ const splitContentIntelligently = (contentDiv: HTMLElement, baseStyles: string, 
       pageNumber: pageNumber,
       totalPages: estimatedPages
     });
+  } else if (currentPageElements.length > 0 && pages.length > 0) {
+    // Add small remaining elements to the last page instead of creating a new one
+    console.log(`Adding ${currentPageElements.length} small elements to previous page instead of creating new page`);
+    const lastPage = pages[pages.length - 1];
+    const lastPageDoc = new DOMParser().parseFromString(lastPage.html, 'text/html');
+    const lastPageContent = lastPageDoc.querySelector('.page-content')?.innerHTML || '';
+    const additionalContent = currentPageElements.map(el => el.outerHTML).join('\n');
+    
+    const updatedContent = lastPageContent + '\n' + additionalContent;
+    const updatedPageHtml = createMultiPageHTML(baseStyles, updatedContent, footerContent, pages.length, estimatedPages);
+    
+    pages[pages.length - 1] = {
+      html: updatedPageHtml,
+      pageNumber: pages.length,
+      totalPages: estimatedPages
+    };
   }
 
   // Update total pages for all pages

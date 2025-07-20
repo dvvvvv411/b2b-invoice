@@ -19,6 +19,7 @@ import { replaceTemplateData, TemplateData } from '@/utils/templateDataReplacer'
 import { replacePlaceholdersWithRealData, SelectedData as LivePreviewData } from '@/utils/livePreviewReplacer';
 import { MultiPagePreview } from '@/components/pdf-templates/MultiPagePreview';
 import { generateMultiPagePDF } from '@/utils/multiPagePDFGenerator';
+import { AITemplateChat } from '@/components/ai-assistant/AITemplateChat';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -469,9 +470,9 @@ export default function PDFTemplates() {
         onDataChange={setSelectedData}
       />
 
-      {/* Main Content - Split Screen */}
-      <div className="grid grid-cols-2 gap-6 flex-1 min-h-0">
-        {/* HTML Editor */}
+      {/* Main Content - Three Column Layout */}
+      <div className="grid grid-cols-3 gap-6 flex-1 min-h-0">
+        {/* Left Column: HTML Editor */}
         <Card className="p-4 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">HTML Editor</h3>
@@ -494,7 +495,7 @@ export default function PDFTemplates() {
               theme="vs-dark"
               options={{
                 minimap: { enabled: false },
-                fontSize: 14,
+                fontSize: 12,
                 lineNumbers: 'on',
                 wordWrap: 'on',
                 scrollBeyondLastLine: false,
@@ -504,7 +505,16 @@ export default function PDFTemplates() {
           </div>
         </Card>
 
-        {/* Multi-Page Preview */}
+        {/* Middle Column: AI Assistant */}
+        <Card className="min-h-0">
+          <AITemplateChat 
+            htmlContent={htmlContent}
+            templateName={currentTemplate?.name}
+            onSuggestionApply={(suggestion) => setHtmlContent(suggestion)}
+          />
+        </Card>
+
+        {/* Right Column: Multi-Page Preview */}
         <Card className="p-4 flex flex-col min-h-0">
           <h3 className="text-lg font-semibold mb-4">DIN A4 Multi-Seiten Vorschau</h3>
           

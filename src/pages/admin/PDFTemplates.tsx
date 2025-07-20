@@ -18,9 +18,6 @@ import DataSelectionCard, { SelectedData } from '@/components/pdf-templates/Data
 import { replaceTemplateData, TemplateData } from '@/utils/templateDataReplacer';
 import { replacePlaceholdersWithRealData, SelectedData as LivePreviewData } from '@/utils/livePreviewReplacer';
 import { MultiPagePreview } from '@/components/pdf-templates/MultiPagePreview';
-import { generateEnhancedMultiPagePDF } from '@/utils/enhancedPDFGenerator';
-import { generateDirectPDF } from '@/utils/directPDFGenerator';
-import { integrateFooterIntoContent } from '@/utils/contentProcessor';
 import { generateMultiPagePDF } from '@/utils/multiPagePDFGenerator';
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
@@ -315,34 +312,22 @@ export default function PDFTemplates() {
 
   const handleDownloadPDF = async () => {
     try {
-      console.log('🚀 Starting PDF download...');
-      console.log('📄 Processed content length:', processedContent?.length || 0);
-      
-      if (!processedContent || !processedContent.trim()) {
-        toast({
-          title: "Fehler beim PDF-Export",
-          description: "Kein Inhalt zum Exportieren vorhanden.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       // Generate filename
       const filename = `${templateName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Use the simplified multi-page PDF generator
+      // Use the corrected multi-page PDF generator
       await generateMultiPagePDF(processedContent, filename);
 
       toast({
         title: "PDF erfolgreich erstellt",
-        description: `Das PDF "${filename}" wurde erfolgreich heruntergeladen.`,
+        description: `Das PDF "${filename}" wurde mit korrekter Multi-Seiten-Aufteilung heruntergeladen.`,
       });
 
     } catch (error) {
-      console.error('❌ PDF generation error:', error);
+      console.error('PDF generation error:', error);
       toast({
         title: "Fehler beim PDF-Export",
-        description: error instanceof Error ? error.message : "Das PDF konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+        description: "Das PDF konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       });
     }
@@ -371,12 +356,18 @@ export default function PDFTemplates() {
 
   // Process content when htmlContent, footerContent, or selectedData changes
   useEffect(() => {
-    // Integrate footer into main content using the enhanced utility
-    let content = integrateFooterIntoContent(htmlContent, footerContent);
+    let content = htmlContent;
+    
+    // Combine main content with footer
+    const combinedContent = content.replace(
+      /<div class="pdf-footer">[\s\S]*?<\/div>/gi,
+      footerContent
+    );
+    content = combinedContent;
 
-    // Apply data replacement based on selected mode
+    // Check if Live Preview with real data is enabled
     if (selectedData.useRealData) {
-      // Build data object for live preview replacer
+      // Build data object for new live preview replacer
       const livePreviewData: LivePreviewData = {};
 
       // Get selected data objects
@@ -399,10 +390,10 @@ export default function PDFTemplates() {
         livePreviewData.spedition = speditionen.find(s => s.id === selectedData.spedition);
       }
 
-      // Use the enhanced live preview replacer
+      // Use the enhanced live preview replacer with all new placeholders
       content = replacePlaceholdersWithRealData(content, livePreviewData);
     } else {
-      // Standard mode - use template data replacer for backward compatibility
+      // Standard mode - still replace old style placeholders for backward compatibility
       const templateData: TemplateData = {};
 
       if (selectedData.kanzlei) {

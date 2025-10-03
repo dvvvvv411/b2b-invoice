@@ -111,7 +111,9 @@ serve(async (req) => {
 
     if (downloadError) throw downloadError;
 
+    console.log('Downloading template file...');
     const templateBuffer = await templateFile.arrayBuffer();
+    console.log('Template buffer size:', templateBuffer.byteLength, 'bytes');
 
     // Calculate prices
     const nettopreis = selectedAutos.reduce((sum, auto) => sum + (auto.einzelpreis_netto || 0), 0);
@@ -132,87 +134,88 @@ serve(async (req) => {
       const units = ['', 'ein', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun'];
       const teens = ['zehn', 'elf', 'zwölf', 'dreizehn', 'vierzehn', 'fünfzehn', 'sechzehn', 'siebzehn', 'achtzehn', 'neunzehn'];
       const tens = ['', '', 'zwanzig', 'dreißig', 'vierzig', 'fünfzig', 'sechzig', 'siebzig', 'achtzig', 'neunzig'];
-      const thousands = ['', 'tausend', 'million', 'milliarde'];
 
       if (amount === 0) return 'Null Euro und Null Cent';
 
       const euros = Math.floor(amount);
       const cents = Math.round((amount - euros) * 100);
 
+      const numberToGerman = (n: number): string => {
+        if (n === 0) return '';
+        if (n === 1) return 'eins';
+        if (n < 10) return units[n];
+        if (n < 20) return teens[n - 10];
+        if (n < 100) {
+          const t = Math.floor(n / 10);
+          const u = n % 10;
+          return (u > 0 ? units[u] + 'und' : '') + tens[t];
+        }
+        if (n < 1000) {
+          const h = Math.floor(n / 100);
+          const r = n % 100;
+          return (h === 1 ? 'ein' : units[h]) + 'hundert' + numberToGerman(r);
+        }
+        return '';
+      };
+
       let result = '';
 
-      // Convert euros
-      if (euros >= 1000) {
-        const tausend = Math.floor(euros / 1000);
-        const rest = euros % 1000;
+      if (euros >= 1000000) {
+        const millionen = Math.floor(euros / 1000000);
+        const rest = euros % 1000000;
         
-        if (tausend === 1) {
-          result = 'eintausend';
-        } else if (tausend < 10) {
-          result = units[tausend] + 'tausend';
-        } else if (tausend < 20) {
-          result = teens[tausend - 10] + 'tausend';
+        if (millionen === 1) {
+          result = 'eine Million';
         } else {
-          const t = Math.floor(tausend / 10);
-          const u = tausend % 10;
-          result = (u > 0 ? units[u] + 'und' : '') + tens[t] + 'tausend';
+          result = numberToGerman(millionen) + ' Millionen';
         }
-
+        
         if (rest > 0) {
-          if (rest < 10) {
-            result += units[rest];
-          } else if (rest < 20) {
-            result += teens[rest - 10];
-          } else if (rest < 100) {
-            const t = Math.floor(rest / 10);
-            const u = rest % 10;
-            result += (u > 0 ? units[u] + 'und' : '') + tens[t];
-          } else {
-            const h = Math.floor(rest / 100);
-            const r = rest % 100;
-            result += (h === 1 ? 'ein' : units[h]) + 'hundert';
-            if (r > 0) {
-              if (r < 10) {
-                result += units[r];
-              } else if (r < 20) {
-                result += teens[r - 10];
-              } else {
-                const t = Math.floor(r / 10);
-                const u = r % 10;
-                result += (u > 0 ? units[u] + 'und' : '') + tens[t];
-              }
-            }
-          }
+          result += ' ' + convertToWordsHelper(rest);
         }
-      } else if (euros < 10) {
-        result = units[euros];
-      } else if (euros < 20) {
-        result = teens[euros - 10];
-      } else if (euros < 100) {
-        const t = Math.floor(euros / 10);
-        const u = euros % 10;
-        result = (u > 0 ? units[u] + 'und' : '') + tens[t];
       } else {
-        const h = Math.floor(euros / 100);
-        const r = euros % 100;
-        result = (h === 1 ? 'ein' : units[h]) + 'hundert';
-        if (r > 0) {
-          if (r < 10) {
-            result += units[r];
-          } else if (r < 20) {
-            result += teens[r - 10];
-          } else {
-            const t = Math.floor(r / 10);
-            const u = r % 10;
-            result += (u > 0 ? units[u] + 'und' : '') + tens[t];
-          }
-        }
+        result = convertToWordsHelper(euros);
       }
 
+      result = result.trim();
       result = result.charAt(0).toUpperCase() + result.slice(1);
       result += ` Euro und ${cents === 0 ? 'Null' : cents} Cent`;
 
       return result;
+      
+      function convertToWordsHelper(n: number): string {
+        if (n === 0) return '';
+        
+        if (n >= 1000) {
+          const tausend = Math.floor(n / 1000);
+          const rest = n % 1000;
+          
+          let tausendWords = '';
+          if (tausend === 1) {
+            tausendWords = 'eintausend';
+          } else if (tausend < 100) {
+            // 2-99 tausend
+            tausendWords = numberToGerman(tausend) + 'tausend';
+          } else {
+            // 100-999 tausend (z.B. 134 tausend)
+            const h = Math.floor(tausend / 100);
+            const r = tausend % 100;
+            tausendWords = (h === 1 ? 'ein' : units[h]) + 'hundert';
+            if (r > 0) {
+              tausendWords += numberToGerman(r);
+            }
+            tausendWords += 'tausend';
+          }
+          
+          if (rest > 0) {
+            tausendWords += numberToGerman(rest);
+          }
+          
+          return tausendWords;
+        } else {
+          return numberToGerman(n);
+        }
+      }
     };
 
     // Prepare template data
@@ -272,7 +275,11 @@ serve(async (req) => {
     console.log('Template data prepared:', { ...templateData, autos: `${selectedAutos.length} items` });
 
     // Process template with Docxtemplater
-    const zip = new PizZip(templateBuffer);
+    console.log('Converting ArrayBuffer to Uint8Array...');
+    const uint8Array = new Uint8Array(templateBuffer);
+    console.log('Initializing PizZip with Uint8Array...');
+    const zip = new PizZip(uint8Array);
+    console.log('Creating Docxtemplater instance...');
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
@@ -288,12 +295,19 @@ serve(async (req) => {
       throw error;
     }
 
+    console.log('Generating final document...');
     const output = doc.getZip().generate({
       type: "uint8array",
       mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       compression: "DEFLATE",
     });
 
+    console.log('Generated document size:', output.byteLength, 'bytes');
+    
+    if (output.byteLength === 0) {
+      throw new Error('Generated document is empty - output has 0 bytes');
+    }
+    
     console.log('Document generated successfully');
 
     return new Response(output, {

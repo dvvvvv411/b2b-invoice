@@ -183,7 +183,7 @@ serve(async (req) => {
       throw new Error('DOCMOSIS_API_KEY is not configured');
     }
 
-    const docmosisResponse = await fetch('https://eu1.dws4.docmosis.com/api/convert', {
+    const docmosisResponse = await fetch('https://eu1.dws4.docmosis.com/api/render', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

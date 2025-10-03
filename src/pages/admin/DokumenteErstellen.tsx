@@ -10,6 +10,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { useKanzleien } from '@/hooks/useKanzleien';
@@ -41,6 +43,7 @@ const DokumenteErstellen = () => {
   const [autoIds, setAutoIds] = useState<string[]>([]);
   const [selectedAutoId, setSelectedAutoId] = useState<string>('');
   const [dekraInput, setDekraInput] = useState<string>('');
+  const [bulkDekraInput, setBulkDekraInput] = useState<string>('');
 
   const { toast } = useToast();
 
@@ -190,6 +193,71 @@ const DokumenteErstellen = () => {
     } else {
       setAutoIds(prev => prev.filter(id => id !== autoId));
     }
+  };
+
+  const handleBulkAddByDekra = () => {
+    const dekraNumbers = bulkDekraInput
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    if (dekraNumbers.length === 0) {
+      toast({
+        title: 'Keine DEKRA-Nummern',
+        description: 'Bitte geben Sie mindestens eine DEKRA-Nummer ein.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    let successCount = 0;
+    let alreadySelectedCount = 0;
+    const notFoundNumbers: string[] = [];
+
+    dekraNumbers.forEach(dekraNr => {
+      const foundAuto = findAutoByDekra(dekraNr);
+      
+      if (!foundAuto) {
+        notFoundNumbers.push(dekraNr);
+        return;
+      }
+
+      if (isSingleVehicleKaufvertrag) {
+        setSelectedAutoId(foundAuto.id);
+        successCount = 1;
+      } else {
+        if (autoIds.includes(foundAuto.id)) {
+          alreadySelectedCount++;
+        } else {
+          setAutoIds(prev => [...prev, foundAuto.id]);
+          successCount++;
+        }
+      }
+    });
+
+    if (successCount > 0) {
+      toast({
+        title: 'Fahrzeuge hinzugefügt',
+        description: `${successCount} Fahrzeug(e) erfolgreich hinzugefügt.`,
+      });
+    }
+
+    if (alreadySelectedCount > 0) {
+      toast({
+        title: 'Bereits ausgewählt',
+        description: `${alreadySelectedCount} Fahrzeug(e) waren bereits ausgewählt.`,
+      });
+    }
+
+    if (notFoundNumbers.length > 0) {
+      toast({
+        title: 'Nicht gefunden',
+        description: `Folgende DEKRA-Nummern wurden nicht gefunden: ${notFoundNumbers.join(', ')}`,
+        variant: 'destructive',
+      });
+    }
+
+    setBulkDekraInput('');
   };
 
   const handleGeneratePDF = () => {
@@ -413,106 +481,159 @@ const DokumenteErstellen = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               
-              {/* DEKRA Quick-Add Input */}
-              <div className="flex gap-2 items-center">
-                <Input
-                  placeholder="0993"
-                  value={dekraInput}
-                  onChange={(e) => setDekraInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddByDekra();
-                    }
-                  }}
-                  maxLength={5}
-                  className="font-mono text-2xl font-bold w-32 h-16 text-center"
-                />
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  onClick={handleAddByDekra}
-                  disabled={!dekraInput.trim()}
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Hinzufügen
-                </Button>
-              </div>
+              {/* Single DEKRA Input Row */}
+              <div className="flex gap-3 items-start">
+                <div className="flex gap-2 items-center">
+                  <Input
+                    placeholder="0993"
+                    value={dekraInput}
+                    onChange={(e) => setDekraInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddByDekra();
+                      }
+                    }}
+                    maxLength={5}
+                    className="font-mono text-2xl font-bold w-32 h-16 text-center"
+                  />
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    onClick={handleAddByDekra}
+                    disabled={!dekraInput.trim()}
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Hinzufügen
+                  </Button>
+                </div>
 
-              {/* Selected Vehicles Display */}
-              {((isSingleVehicleKaufvertrag && selectedAutoId) || 
-                (!isSingleVehicleKaufvertrag && autoIds.length > 0)) && (
-                <div className="space-y-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-gradient-primary">
-                      Ausgewählte Fahrzeuge ({isSingleVehicleKaufvertrag ? 1 : autoIds.length})
-                    </p>
-                    {!isSingleVehicleKaufvertrag && autoIds.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setAutoIds([])}
-                      >
-                        Alle entfernen
-                      </Button>
-                    )}
-                  </div>
-                  <div className="space-y-2">
+                {/* Selected Vehicles Badges */}
+                {((isSingleVehicleKaufvertrag && selectedAutoId) || 
+                  (!isSingleVehicleKaufvertrag && autoIds.length > 0)) && (
+                  <div className="flex-1 flex flex-wrap gap-2 items-center max-h-32 overflow-y-auto p-2 bg-primary/5 rounded-lg border border-primary/20">
                     {isSingleVehicleKaufvertrag ? (
                       selectedAuto && (
-                        <div className="flex items-center justify-between p-3 bg-background rounded-md border border-border">
-                          <div className="flex-1">
-                            <p className="font-medium">{selectedAuto.marke} {selectedAuto.modell}</p>
-                            <p className="text-xs text-muted-foreground">
-                              DEKRA: {selectedAuto.dekra_bericht_nr} | FIN: {selectedAuto.fahrgestell_nr}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="font-bold text-gradient-secondary">
-                              {formatPrice(selectedAuto.einzelpreis_netto)}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveAuto(selectedAuto.id)}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
+                        <Badge variant="secondary" className="text-sm px-3 py-2 gap-2">
+                          <span>{selectedAuto.marke} {selectedAuto.modell}</span>
+                          <span className="text-xs text-muted-foreground">({selectedAuto.dekra_bericht_nr})</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 p-0 hover:bg-destructive/20"
+                            onClick={() => handleRemoveAuto(selectedAuto.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
                       )
                     ) : (
-                      selectedAutos.map((auto) => (
-                        <div 
-                          key={auto.id}
-                          className="flex items-center justify-between p-3 bg-background rounded-md border border-border"
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium">{auto.marke} {auto.modell}</p>
-                            <p className="text-xs text-muted-foreground">
-                              DEKRA: {auto.dekra_bericht_nr} | FIN: {auto.fahrgestell_nr}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="font-bold text-gradient-secondary">
-                              {formatPrice(auto.einzelpreis_netto)}
-                            </span>
+                      <>
+                        {selectedAutos.map((auto) => (
+                          <Badge key={auto.id} variant="secondary" className="text-sm px-3 py-2 gap-2">
+                            <span>{auto.marke} {auto.modell}</span>
+                            <span className="text-xs text-muted-foreground">({auto.dekra_bericht_nr})</span>
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
+                              className="h-4 w-4 p-0 hover:bg-destructive/20"
                               onClick={() => handleRemoveAuto(auto.id)}
                             >
-                              <X className="w-4 h-4" />
+                              <X className="h-3 w-3" />
                             </Button>
-                          </div>
-                        </div>
-                      ))
+                          </Badge>
+                        ))}
+                        {autoIds.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setAutoIds([])}
+                            className="h-8 text-xs"
+                          >
+                            Alle entfernen
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              {/* Optional: Collapsible ScrollArea für manuelle Auswahl */}
+              {/* Bulk DEKRA Textarea Row */}
+              <div className="flex gap-3 items-start">
+                <div className="flex gap-2 items-start">
+                  <Textarea
+                    placeholder="0993&#10;0212&#10;1135&#10;2519"
+                    value={bulkDekraInput}
+                    onChange={(e) => setBulkDekraInput(e.target.value)}
+                    className="font-mono text-2xl font-bold w-32 h-40 text-center resize-none"
+                  />
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    onClick={handleBulkAddByDekra}
+                    disabled={!bulkDekraInput.trim()}
+                    className="h-40"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Hinzufügen
+                  </Button>
+                </div>
+
+                {/* Selected Vehicles Badges (same as above) */}
+                {((isSingleVehicleKaufvertrag && selectedAutoId) || 
+                  (!isSingleVehicleKaufvertrag && autoIds.length > 0)) && (
+                  <div className="flex-1 flex flex-wrap gap-2 items-center max-h-40 overflow-y-auto p-2 bg-primary/5 rounded-lg border border-primary/20">
+                    {isSingleVehicleKaufvertrag ? (
+                      selectedAuto && (
+                        <Badge variant="secondary" className="text-sm px-3 py-2 gap-2">
+                          <span>{selectedAuto.marke} {selectedAuto.modell}</span>
+                          <span className="text-xs text-muted-foreground">({selectedAuto.dekra_bericht_nr})</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 p-0 hover:bg-destructive/20"
+                            onClick={() => handleRemoveAuto(selectedAuto.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      )
+                    ) : (
+                      <>
+                        {selectedAutos.map((auto) => (
+                          <Badge key={auto.id} variant="secondary" className="text-sm px-3 py-2 gap-2">
+                            <span>{auto.marke} {auto.modell}</span>
+                            <span className="text-xs text-muted-foreground">({auto.dekra_bericht_nr})</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4 p-0 hover:bg-destructive/20"
+                              onClick={() => handleRemoveAuto(auto.id)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </Badge>
+                        ))}
+                        {autoIds.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setAutoIds([])}
+                            className="h-8 text-xs"
+                          >
+                            Alle entfernen
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <Separator className="my-4" />
+
+              {/* Manual Selection Collapsible */}
               <Collapsible>
                 <CollapsibleTrigger asChild>
                   <Button variant="outline" size="sm" className="w-full">

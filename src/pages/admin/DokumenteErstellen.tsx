@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, FileType, Download, Car, Plus, X, ChevronDown } from 'lucide-react';
+import { FileText, FileType, Download, Car, Plus, X, ChevronDown, Check, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +14,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import { useKanzleien } from '@/hooks/useKanzleien';
 import { useKunden } from '@/hooks/useKunden';
 import { useBankkonten } from '@/hooks/useBankkonten';
@@ -50,6 +53,8 @@ const DokumenteErstellen = () => {
   const [applyDiscount, setApplyDiscount] = useState<boolean>(false);
   const [isKundenFormOpen, setIsKundenFormOpen] = useState<boolean>(false);
   const [isBankkontenFormOpen, setIsBankkontenFormOpen] = useState<boolean>(false);
+  const [autoSearchQuery, setAutoSearchQuery] = useState<string>('');
+  const [kundeComboboxOpen, setKundeComboboxOpen] = useState<boolean>(false);
 
   const { toast } = useToast();
 
@@ -130,6 +135,19 @@ const DokumenteErstellen = () => {
     ? selectedAutos.reduce((sum, auto) => sum + calculateDiscountedPrice(auto.einzelpreis_netto || 0), 0)
     : 0;
   const kaufvertragMultipleBruttopreis = kaufvertragMultipleNettopreis * 1.19;
+
+  // Filter autos based on search query
+  const filteredAutos = autos.filter(auto => {
+    if (!autoSearchQuery.trim()) return true;
+    
+    const query = autoSearchQuery.toLowerCase();
+    return (
+      auto.marke?.toLowerCase().includes(query) ||
+      auto.modell?.toLowerCase().includes(query) ||
+      auto.fahrgestell_nr?.toLowerCase().includes(query) ||
+      auto.dekra_bericht_nr?.toLowerCase().includes(query)
+    );
+  });
 
   // Validation
   const isValidRechnung = kanzlei && kunde && bankkonto && insolventesUnternehmen && autoIds.length > 0;
@@ -445,18 +463,49 @@ const DokumenteErstellen = () => {
                 <div className="space-y-2">
                   <Label htmlFor="kunde">Kunde *</Label>
                   <div className="flex gap-2">
-                    <Select value={kunde} onValueChange={setKunde}>
-                      <SelectTrigger id="kunde" className="flex-1">
-                        <SelectValue placeholder="Kunde auswählen" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {kunden.map((k) => (
-                          <SelectItem key={k.id} value={k.id}>
-                            {k.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={kundeComboboxOpen} onOpenChange={setKundeComboboxOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={kundeComboboxOpen}
+                          className="flex-1 justify-between"
+                        >
+                          {kunde
+                            ? kunden.find((k) => k.id === kunde)?.name
+                            : "Kunde auswählen"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Kunde suchen..." />
+                          <CommandEmpty>Kein Kunde gefunden.</CommandEmpty>
+                          <CommandGroup>
+                            <ScrollArea className="h-[300px]">
+                              {kunden.map((k) => (
+                                <CommandItem
+                                  key={k.id}
+                                  value={k.name}
+                                  onSelect={() => {
+                                    setKunde(k.id);
+                                    setKundeComboboxOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      kunde === k.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {k.name}
+                                </CommandItem>
+                              ))}
+                            </ScrollArea>
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <Button
                       type="button"
                       variant="outline"
@@ -631,6 +680,9 @@ const DokumenteErstellen = () => {
                                   <p className="text-sm text-muted-foreground">
                                     Fahrgestell-Nr.: {selectedAuto.fahrgestell_nr || 'N/A'}
                                   </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    DEKRA-Nr.: {selectedAuto.dekra_bericht_nr || 'N/A'}
+                                  </p>
                                  </div>
                                  <div className="text-right">
                                    {applyDiscount && discountPercentage && parseFloat(discountPercentage) > 0 ? (
@@ -679,6 +731,9 @@ const DokumenteErstellen = () => {
                                   </p>
                                   <p className="text-sm text-muted-foreground">
                                     Fahrgestell-Nr.: {auto.fahrgestell_nr || 'N/A'}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    DEKRA-Nr.: {auto.dekra_bericht_nr || 'N/A'}
                                   </p>
                                  </div>
                                  <div className="text-right">
@@ -731,11 +786,35 @@ const DokumenteErstellen = () => {
                     Oder manuell aus Liste auswählen ({autos.length} Fahrzeuge)
                   </Button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="mt-3">
+                <CollapsibleContent className="mt-3 space-y-3">
+                  {/* Search Field */}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Suchen nach Marke, Modell, Fahrgestell-Nr. oder DEKRA-Nr..."
+                      value={autoSearchQuery}
+                      onChange={(e) => setAutoSearchQuery(e.target.value)}
+                      className="flex-1"
+                    />
+                    {autoSearchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setAutoSearchQuery('')}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* List */}
                   <ScrollArea className="h-[300px] pr-4">
-                {(documentType === 'rechnung' || isMultipleVehicleKaufvertrag) ? (
+                {filteredAutos.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Keine Fahrzeuge gefunden.
+                  </div>
+                ) : (documentType === 'rechnung' || isMultipleVehicleKaufvertrag) ? (
                   <div className="space-y-3">
-                    {autos.map((auto) => (
+                    {filteredAutos.map((auto) => (
                       <div
                         key={auto.id}
                         className="flex items-center space-x-3 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors"
@@ -770,7 +849,7 @@ const DokumenteErstellen = () => {
                 ) : (
                   <RadioGroup value={selectedAutoId} onValueChange={setSelectedAutoId}>
                     <div className="space-y-3">
-                      {autos.map((auto) => (
+                      {filteredAutos.map((auto) => (
                         <div
                           key={auto.id}
                           className="flex items-center space-x-3 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors"
@@ -799,7 +878,8 @@ const DokumenteErstellen = () => {
                       ))}
                     </div>
                   </RadioGroup>
-                )}
+                )
+                }
                   </ScrollArea>
                 </CollapsibleContent>
               </Collapsible>

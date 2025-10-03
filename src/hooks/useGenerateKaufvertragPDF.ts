@@ -60,7 +60,7 @@ export const useGenerateKaufvertragPDF = () => {
       return data;
     },
     onSuccess: (data) => {
-      downloadPDF(data.base64, 'Kaufvertrag.pdf');
+      downloadPDF(data.base64, data.filename || 'Kaufvertrag.pdf');
 
       toast({
         title: 'Erfolg',

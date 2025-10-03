@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const sanitizeFilename = (name: string): string => {
+  return name.replace(/[<>:"/\\|?*]/g, '_').trim();
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -227,8 +231,10 @@ serve(async (req) => {
 
     console.log('Kaufvertrag PDF generated successfully');
 
+    const filename = `Kaufvertrag ${sanitizeFilename(kunde.name)}.pdf`;
+
     return new Response(
-      JSON.stringify({ base64: base64Pdf }),
+      JSON.stringify({ base64: base64Pdf, filename }),
       {
         headers: {
           ...corsHeaders,

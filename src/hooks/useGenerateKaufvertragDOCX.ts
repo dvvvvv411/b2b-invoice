@@ -54,7 +54,7 @@ export const useGenerateKaufvertragDOCX = () => {
       return data;
     },
     onSuccess: (data) => {
-      downloadDOCX(data.base64, 'Kaufvertrag.docx');
+      downloadDOCX(data.base64, data.filename || 'Kaufvertrag.docx');
 
       toast({
         title: 'Erfolg',

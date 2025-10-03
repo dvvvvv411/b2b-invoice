@@ -245,7 +245,7 @@ serve(async (req) => {
 
     console.log('Calling Docmosis API...');
 
-    // Call Docmosis API
+    // Call Docmosis API with inline storage to get binary PDF
     const docmosisResponse = await fetch(DOCMOSIS_API_URL, {
       method: 'POST',
       headers: {
@@ -255,7 +255,7 @@ serve(async (req) => {
         accessKey: DOCMOSIS_API_KEY,
         templateName: 'Rechnung.docx',
         outputName: `Rechnung_${rechnungsnummer}.pdf`,
-        storeTo: 'base64',
+        storeTo: 'inline',
         data: jsonData
       })
     });
@@ -269,13 +269,17 @@ serve(async (req) => {
       );
     }
 
-    const docmosisResult = await docmosisResponse.json();
+    // Get binary PDF data and convert to base64
+    const pdfBuffer = await docmosisResponse.arrayBuffer();
+    const base64Pdf = btoa(
+      new Uint8Array(pdfBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
     
     console.log('PDF generated successfully');
 
     return new Response(
       JSON.stringify({ 
-        base64: docmosisResult.base64,
+        base64: base64Pdf,
         rechnungsnummer: rechnungsnummer 
       }),
       { 

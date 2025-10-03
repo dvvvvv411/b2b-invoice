@@ -10,7 +10,6 @@ import {
   CreditCard, 
   Truck, 
   Factory,
-  FileText,
   Plus,
   TrendingUp,
   AlertCircle
@@ -73,14 +72,6 @@ const Dashboard = () => {
 
   const quickActions = [
     {
-      title: 'PDF erstellen',
-      description: 'Neues PDF-Dokument generieren',
-      icon: FileText,
-      variant: 'gaming' as const,
-      size: 'large',
-      route: '/admin/pdf-generator'
-    },
-    {
       title: 'Neuer Kunde',
       description: 'Kundendaten hinzufügen',
       icon: Users,
@@ -122,11 +113,10 @@ const Dashboard = () => {
       {/* Welcome Header */}
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold text-gradient-primary font-orbitron">
-          Willkommen im PDF Generator Panel
+          Willkommen im Admin Panel
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Verwalten Sie Ihre Daten und erstellen Sie professionelle PDF-Dokumente 
-          für Ihre Geschäftsprozesse.
+          Verwalten Sie Ihre Daten effizient und übersichtlich.
         </p>
       </div>
 
@@ -171,45 +161,38 @@ const Dashboard = () => {
           <h2 className="text-2xl font-semibold text-gradient-primary">Quick Actions</h2>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {quickActions.map((action, index) => {
-            const isLarge = action.size === 'large';
-            return (
-              <Card 
-                key={index} 
-                className={`glass p-6 hover:neon-glow-green transition-all duration-300 cursor-pointer border-secondary/20 ${
-                  isLarge ? 'md:col-span-2 lg:col-span-2' : ''
-                }`}
-                onClick={() => navigate(action.route)}
-              >
-                <div className="text-center space-y-4">
-                  <div className={`mx-auto p-4 rounded-lg bg-gradient-to-br from-secondary/20 to-primary/20 ${
-                    isLarge ? 'w-16 h-16' : 'w-12 h-12'
-                  } flex items-center justify-center`}>
-                    <action.icon className={`${isLarge ? 'w-8 h-8' : 'w-6 h-6'} text-secondary`} />
-                  </div>
-                  
-                  <div>
-                    <h3 className={`${isLarge ? 'text-xl' : 'text-lg'} font-semibold text-foreground mb-2`}>
-                      {action.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {action.description}
-                    </p>
-                    
-                    <Button 
-                      variant={action.variant} 
-                      size={isLarge ? 'lg' : 'sm'}
-                      className="w-full"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      {isLarge ? 'Jetzt erstellen' : 'Hinzufügen'}
-                    </Button>
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {quickActions.map((action, index) => (
+            <Card 
+              key={index} 
+              className="glass p-6 hover:neon-glow-green transition-all duration-300 cursor-pointer border-secondary/20"
+              onClick={() => navigate(action.route)}
+            >
+              <div className="text-center space-y-4">
+                <div className="mx-auto p-4 rounded-lg bg-gradient-to-br from-secondary/20 to-primary/20 w-12 h-12 flex items-center justify-center">
+                  <action.icon className="w-6 h-6 text-secondary" />
                 </div>
-              </Card>
-            );
-          })}
+                
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    {action.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {action.description}
+                  </p>
+                  
+                  <Button 
+                    variant={action.variant} 
+                    size="sm"
+                    className="w-full"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Hinzufügen
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
         </div>
       </div>
       
@@ -217,7 +200,7 @@ const Dashboard = () => {
       <Card className="glass p-6 border-primary/20">
         <div className="text-center space-y-2">
           <h3 className="text-lg font-semibold text-gradient-secondary">
-            Bereit für Ihre nächste PDF-Generierung?
+            Bereit loszulegen?
           </h3>
           <p className="text-muted-foreground">
             Wählen Sie eine der Quick Actions oben oder navigieren Sie über das Menü zu den gewünschten Bereichen.

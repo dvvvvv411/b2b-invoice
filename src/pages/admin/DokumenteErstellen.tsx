@@ -348,7 +348,7 @@ const DokumenteErstellen = () => {
           ? { auto_id: selectedAutoId }
           : { auto_ids: autoIds }
         ),
-        templateName: getTemplateName(documentType),
+        templateName: getTemplateName(kaufvertragType),
         discounted_autos: autosWithDiscount,
       }, {
         onSuccess: () => {
@@ -412,7 +412,7 @@ const DokumenteErstellen = () => {
           ? { auto_id: selectedAutoId }
           : { auto_ids: autoIds }
         ),
-        templateName: getTemplateName(documentType),
+        templateName: getTemplateName(kaufvertragType),
         discounted_autos: autosWithDiscount,
       }, {
         onSuccess: () => {

@@ -12,6 +12,7 @@ export interface GenerateKaufvertragInput {
   auto_id?: string;
   auto_ids?: string[];
   templateName?: string;
+  discounted_autos?: any[];
 }
 
 const base64ToBlob = (base64: string, type: string = 'application/pdf'): Blob => {

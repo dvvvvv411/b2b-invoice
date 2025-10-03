@@ -44,6 +44,8 @@ const DokumenteErstellen = () => {
   const [selectedAutoId, setSelectedAutoId] = useState<string>('');
   const [dekraInput, setDekraInput] = useState<string>('');
   const [bulkDekraInput, setBulkDekraInput] = useState<string>('');
+  const [discountPercentage, setDiscountPercentage] = useState<string>('');
+  const [applyDiscount, setApplyDiscount] = useState<boolean>(false);
 
   const { toast } = useToast();
 
@@ -99,20 +101,29 @@ const DokumenteErstellen = () => {
     }
   }, [kanzleien, insolventeUnternehmen, speditionen, isKaufvertrag, kanzlei, insolventesUnternehmen, spedition]);
 
+  // Discount calculation helper
+  const calculateDiscountedPrice = (originalPrice: number): number => {
+    if (!applyDiscount || !discountPercentage || parseFloat(discountPercentage) === 0) {
+      return originalPrice;
+    }
+    const discount = parseFloat(discountPercentage) / 100;
+    return originalPrice * (1 - discount);
+  };
+
   // Calculate totals for Rechnung
   const selectedAutos = autos.filter(auto => autoIds.includes(auto.id));
-  const nettopreis = selectedAutos.reduce((sum, auto) => sum + (auto.einzelpreis_netto || 0), 0);
+  const nettopreis = selectedAutos.reduce((sum, auto) => sum + calculateDiscountedPrice(auto.einzelpreis_netto || 0), 0);
   const mwst = nettopreis * 0.19;
   const bruttopreis = nettopreis + mwst;
 
   // Calculate totals for Kaufvertrag single vehicle
   const selectedAuto = autos.find(auto => auto.id === selectedAutoId);
-  const kaufvertragNettopreis = selectedAuto?.einzelpreis_netto || 0;
+  const kaufvertragNettopreis = selectedAuto ? calculateDiscountedPrice(selectedAuto.einzelpreis_netto || 0) : 0;
   const kaufvertragBruttopreis = kaufvertragNettopreis * 1.19;
 
   // Calculate totals for Kaufvertrag multiple vehicles
   const kaufvertragMultipleNettopreis = isMultipleVehicleKaufvertrag
-    ? selectedAutos.reduce((sum, auto) => sum + (auto.einzelpreis_netto || 0), 0)
+    ? selectedAutos.reduce((sum, auto) => sum + calculateDiscountedPrice(auto.einzelpreis_netto || 0), 0)
     : 0;
   const kaufvertragMultipleBruttopreis = kaufvertragMultipleNettopreis * 1.19;
 
@@ -264,14 +275,29 @@ const DokumenteErstellen = () => {
     if (!isValid) return;
     
     if (documentType === 'rechnung') {
+      const autosWithDiscount = selectedAutos.map(auto => ({
+        ...auto,
+        einzelpreis_netto: calculateDiscountedPrice(auto.einzelpreis_netto || 0)
+      }));
+
       generateRechnungPDFMutation.mutate({
         kanzlei_id: kanzlei,
         kunde_id: kunde,
         bankkonto_id: bankkonto,
         insolvente_unternehmen_id: insolventesUnternehmen,
         auto_ids: autoIds,
+        discounted_autos: autosWithDiscount,
       });
     } else {
+      const autosForKaufvertrag = isSingleVehicleKaufvertrag 
+        ? (selectedAuto ? [selectedAuto] : [])
+        : selectedAutos;
+      
+      const autosWithDiscount = autosForKaufvertrag.map(auto => ({
+        ...auto,
+        einzelpreis_netto: calculateDiscountedPrice(auto.einzelpreis_netto || 0)
+      }));
+
       generateKaufvertragPDFMutation.mutate({
         kanzlei_id: kanzlei,
         kunde_id: kunde,
@@ -283,6 +309,7 @@ const DokumenteErstellen = () => {
           : { auto_ids: autoIds }
         ),
         templateName: getTemplateName(documentType),
+        discounted_autos: autosWithDiscount,
       });
     }
   };
@@ -291,14 +318,29 @@ const DokumenteErstellen = () => {
     if (!isValid) return;
     
     if (documentType === 'rechnung') {
+      const autosWithDiscount = selectedAutos.map(auto => ({
+        ...auto,
+        einzelpreis_netto: calculateDiscountedPrice(auto.einzelpreis_netto || 0)
+      }));
+
       generateRechnungDOCXMutation.mutate({
         kanzlei_id: kanzlei,
         kunde_id: kunde,
         bankkonto_id: bankkonto,
         insolvente_unternehmen_id: insolventesUnternehmen,
         auto_ids: autoIds,
+        discounted_autos: autosWithDiscount,
       });
     } else {
+      const autosForKaufvertrag = isSingleVehicleKaufvertrag 
+        ? (selectedAuto ? [selectedAuto] : [])
+        : selectedAutos;
+      
+      const autosWithDiscount = autosForKaufvertrag.map(auto => ({
+        ...auto,
+        einzelpreis_netto: calculateDiscountedPrice(auto.einzelpreis_netto || 0)
+      }));
+
       generateKaufvertragDOCXMutation.mutate({
         kanzlei_id: kanzlei,
         kunde_id: kunde,
@@ -310,6 +352,7 @@ const DokumenteErstellen = () => {
           : { auto_ids: autoIds }
         ),
         templateName: getTemplateName(documentType),
+        discounted_autos: autosWithDiscount,
       });
     }
   };
@@ -562,14 +605,30 @@ const DokumenteErstellen = () => {
                                   <p className="text-sm text-muted-foreground">
                                     Fahrgestell-Nr.: {selectedAuto.fahrgestell_nr || 'N/A'}
                                   </p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="font-bold text-gradient-secondary">
-                                    {formatPrice(selectedAuto.einzelpreis_netto)}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">Netto</p>
-                                </div>
-                              </div>
+                                 </div>
+                                 <div className="text-right">
+                                   {applyDiscount && discountPercentage && parseFloat(discountPercentage) > 0 ? (
+                                     <>
+                                       <p className="text-xs text-muted-foreground line-through">
+                                         {formatPrice(selectedAuto.einzelpreis_netto)}
+                                       </p>
+                                       <p className="font-bold text-gradient-secondary">
+                                         {formatPrice(calculateDiscountedPrice(selectedAuto.einzelpreis_netto || 0))}
+                                       </p>
+                                       <p className="text-xs text-green-600 font-semibold">
+                                         -{discountPercentage}% Rabatt
+                                       </p>
+                                     </>
+                                   ) : (
+                                     <>
+                                       <p className="font-bold text-gradient-secondary">
+                                         {formatPrice(selectedAuto.einzelpreis_netto)}
+                                       </p>
+                                       <p className="text-xs text-muted-foreground">Netto</p>
+                                     </>
+                                   )}
+                                 </div>
+                               </div>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -595,14 +654,30 @@ const DokumenteErstellen = () => {
                                   <p className="text-sm text-muted-foreground">
                                     Fahrgestell-Nr.: {auto.fahrgestell_nr || 'N/A'}
                                   </p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="font-bold text-gradient-secondary">
-                                    {formatPrice(auto.einzelpreis_netto)}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">Netto</p>
-                                </div>
-                              </div>
+                                 </div>
+                                 <div className="text-right">
+                                   {applyDiscount && discountPercentage && parseFloat(discountPercentage) > 0 ? (
+                                     <>
+                                       <p className="text-xs text-muted-foreground line-through">
+                                         {formatPrice(auto.einzelpreis_netto)}
+                                       </p>
+                                       <p className="font-bold text-gradient-secondary">
+                                         {formatPrice(calculateDiscountedPrice(auto.einzelpreis_netto || 0))}
+                                       </p>
+                                       <p className="text-xs text-green-600 font-semibold">
+                                         -{discountPercentage}% Rabatt
+                                       </p>
+                                     </>
+                                   ) : (
+                                     <>
+                                       <p className="font-bold text-gradient-secondary">
+                                         {formatPrice(auto.einzelpreis_netto)}
+                                       </p>
+                                       <p className="text-xs text-muted-foreground">Netto</p>
+                                     </>
+                                   )}
+                                 </div>
+                               </div>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -736,18 +811,48 @@ const DokumenteErstellen = () => {
                         : (isSingleVehicleKaufvertrag ? kaufvertragNettopreis * 0.19 : kaufvertragMultipleNettopreis * 0.19)
                     )}
                   </span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold">Bruttopreis:</span>
-                  <span className="font-bold text-2xl text-gradient-primary">
-                    {formatPrice(
-                      documentType === 'rechnung' 
-                        ? bruttopreis 
-                        : (isSingleVehicleKaufvertrag ? kaufvertragBruttopreis : kaufvertragMultipleBruttopreis)
-                    )}
-                  </span>
-                </div>
+                 </div>
+                 <Separator />
+                 <div className="flex justify-between items-center gap-4">
+                   {/* Links: Rabatt-Eingabe mit Checkbox */}
+                   <div className="flex items-center gap-2">
+                     <Input
+                       type="number"
+                       placeholder="0"
+                       value={discountPercentage}
+                       onChange={(e) => setDiscountPercentage(e.target.value)}
+                       className="w-20 h-10 text-center"
+                       min="0"
+                       max="100"
+                       step="0.1"
+                       disabled={!applyDiscount}
+                     />
+                     <span className="text-sm text-muted-foreground">%</span>
+                     <Checkbox
+                       checked={applyDiscount}
+                       onCheckedChange={(checked) => setApplyDiscount(checked as boolean)}
+                       id="apply-discount"
+                     />
+                     <Label 
+                       htmlFor="apply-discount" 
+                       className="text-sm text-muted-foreground cursor-pointer"
+                     >
+                       Rabatt anwenden
+                     </Label>
+                   </div>
+
+                   {/* Rechts: Bruttopreis */}
+                   <div className="flex items-center gap-2">
+                     <span className="text-lg font-semibold">Bruttopreis:</span>
+                     <span className="font-bold text-2xl text-gradient-primary">
+                       {formatPrice(
+                         documentType === 'rechnung' 
+                           ? bruttopreis 
+                           : (isSingleVehicleKaufvertrag ? kaufvertragBruttopreis : kaufvertragMultipleBruttopreis)
+                       )}
+                     </span>
+                   </div>
+                 </div>
               </CardContent>
             </Card>
           )}

@@ -63,7 +63,8 @@ serve(async (req) => {
       auto_id,
       auto_ids,
       templateName = 'Kaufvertrag-1-P.docx',
-      debug
+      debug,
+      discounted_autos
     } = requestBody;
 
     console.log('Generating Kaufvertrag PDF with:', { kanzlei_id, kunde_id, bankkonto_id, insolvente_unternehmen_id, spedition_id, auto_id, auto_ids, templateName });
@@ -89,35 +90,40 @@ serve(async (req) => {
     const inso = insoResult.data;
     const spedition = speditionResult.data;
 
-    // Fetch autos - flexible for single or multiple vehicles
+    // Use discounted autos if provided, otherwise fetch from DB
     let autosData;
-    if (auto_ids && auto_ids.length > 0) {
-      // Multiple vehicles
-      const { data: autos, error: autosError } = await supabase
-        .from('autos')
-        .select('*')
-        .in('id', auto_ids)
-        .eq('user_id', userId);
-      
-      if (autosError || !autos || autos.length === 0) {
-        throw new Error('Fehler beim Laden der Fahrzeuge');
-      }
-      autosData = autos;
-    } else if (auto_id) {
-      // Single vehicle
-      const { data: auto, error: autoError } = await supabase
-        .from('autos')
-        .select('*')
-        .eq('id', auto_id)
-        .eq('user_id', userId)
-        .single();
-      
-      if (autoError || !auto) {
-        throw new Error('Fahrzeug nicht gefunden');
-      }
-      autosData = [auto];
+    if (discounted_autos && discounted_autos.length > 0) {
+      autosData = discounted_autos;
     } else {
-      throw new Error('Keine Fahrzeug-IDs angegeben');
+      // Fetch autos - flexible for single or multiple vehicles
+      if (auto_ids && auto_ids.length > 0) {
+        // Multiple vehicles
+        const { data: autos, error: autosError } = await supabase
+          .from('autos')
+          .select('*')
+          .in('id', auto_ids)
+          .eq('user_id', userId);
+        
+        if (autosError || !autos || autos.length === 0) {
+          throw new Error('Fehler beim Laden der Fahrzeuge');
+        }
+        autosData = autos;
+      } else if (auto_id) {
+        // Single vehicle
+        const { data: auto, error: autoError } = await supabase
+          .from('autos')
+          .select('*')
+          .eq('id', auto_id)
+          .eq('user_id', userId)
+          .single();
+        
+        if (autoError || !auto) {
+          throw new Error('Fahrzeug nicht gefunden');
+        }
+        autosData = [auto];
+      } else {
+        throw new Error('Keine Fahrzeug-IDs angegeben');
+      }
     }
 
     // Calculate prices for all vehicles

@@ -8,6 +8,7 @@ export interface GenerateRechnungInput {
   bankkonto_id: string;
   insolvente_unternehmen_id: string;
   auto_ids: string[];
+  discounted_autos?: any[];
 }
 
 const base64ToBlob = (base64: string, type: string = 'application/pdf'): Blob => {

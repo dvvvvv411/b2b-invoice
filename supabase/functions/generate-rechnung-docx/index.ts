@@ -88,7 +88,7 @@ serve(async (req) => {
     });
 
     // Parse request body
-    const { kanzlei_id, kunde_id, bankkonto_id, insolvente_unternehmen_id, auto_ids } = await req.json();
+    const { kanzlei_id, kunde_id, bankkonto_id, insolvente_unternehmen_id, auto_ids, discounted_autos } = await req.json();
 
     // Validate input
     if (!kanzlei_id || !kunde_id || !bankkonto_id || !insolvente_unternehmen_id || !auto_ids || auto_ids.length === 0) {
@@ -151,7 +151,9 @@ serve(async (req) => {
     const kunde = kundeResult.data;
     const bankkonto = bankkontoResult.data;
     const insolvent = insolventResult.data;
-    const autos = autosResult.data;
+    
+    // Use discounted autos if provided, otherwise use DB autos
+    const autos = discounted_autos && discounted_autos.length > 0 ? discounted_autos : autosResult.data;
 
     // Get or create rechnungsnummer
     let currentNummer = rechnungsnummerResult.data?.letzte_nummer || 23975;

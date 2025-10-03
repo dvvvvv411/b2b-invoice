@@ -11,6 +11,7 @@ export interface GenerateKaufvertragInput {
   auto_id?: string;
   auto_ids?: string[];
   templateName?: string;
+  discounted_autos?: any[];
 }
 
 const base64ToBlob = (base64: string, type: string = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'): Blob => {

@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 import { useKanzleien } from '@/hooks/useKanzleien';
 import { useKunden } from '@/hooks/useKunden';
 import { useBankkonten } from '@/hooks/useBankkonten';
@@ -61,6 +62,8 @@ const DokumenteErstellen = () => {
   const { data: insolventeUnternehmen = [] } = useInsolventeUnternehmen();
   const { data: speditionen = [] } = useSpeditionen();
   const { data: autos = [] } = useAutos();
+
+  const [includeRechnung, setIncludeRechnung] = useState<boolean>(false);
 
   const generateRechnungPDFMutation = useGenerateRechnungPDF();
   const generateRechnungDOCXMutation = useGenerateRechnungDOCX();
@@ -327,6 +330,14 @@ const DokumenteErstellen = () => {
         einzelpreis_netto: calculateDiscountedPrice(auto.einzelpreis_netto || 0)
       }));
 
+      // Prepare Rechnung data in case includeRechnung is true
+      const autosForRechnung = isSingleVehicleKaufvertrag ? autosForKaufvertrag : selectedAutos;
+      const rechnungAutoIds = autosForRechnung.map(a => a.id);
+      const rechnungAutosWithDiscount = autosForRechnung.map(auto => ({
+        ...auto,
+        einzelpreis_netto: calculateDiscountedPrice(auto.einzelpreis_netto || 0)
+      }));
+
       generateKaufvertragPDFMutation.mutate({
         kanzlei_id: kanzlei,
         kunde_id: kunde,
@@ -339,6 +350,19 @@ const DokumenteErstellen = () => {
         ),
         templateName: getTemplateName(documentType),
         discounted_autos: autosWithDiscount,
+      }, {
+        onSuccess: () => {
+          if (includeRechnung) {
+            generateRechnungPDFMutation.mutate({
+              kanzlei_id: kanzlei,
+              kunde_id: kunde,
+              bankkonto_id: bankkonto,
+              insolvente_unternehmen_id: insolventesUnternehmen,
+              auto_ids: rechnungAutoIds,
+              discounted_autos: rechnungAutosWithDiscount,
+            });
+          }
+        }
       });
     }
   };
@@ -370,6 +394,14 @@ const DokumenteErstellen = () => {
         einzelpreis_netto: calculateDiscountedPrice(auto.einzelpreis_netto || 0)
       }));
 
+      // Prepare Rechnung data in case includeRechnung is true
+      const autosForRechnung = isSingleVehicleKaufvertrag ? autosForKaufvertrag : selectedAutos;
+      const rechnungAutoIds = autosForRechnung.map(a => a.id);
+      const rechnungAutosWithDiscount = autosForRechnung.map(auto => ({
+        ...auto,
+        einzelpreis_netto: calculateDiscountedPrice(auto.einzelpreis_netto || 0)
+      }));
+
       generateKaufvertragDOCXMutation.mutate({
         kanzlei_id: kanzlei,
         kunde_id: kunde,
@@ -382,6 +414,19 @@ const DokumenteErstellen = () => {
         ),
         templateName: getTemplateName(documentType),
         discounted_autos: autosWithDiscount,
+      }, {
+        onSuccess: () => {
+          if (includeRechnung) {
+            generateRechnungDOCXMutation.mutate({
+              kanzlei_id: kanzlei,
+              kunde_id: kunde,
+              bankkonto_id: bankkonto,
+              insolvente_unternehmen_id: insolventesUnternehmen,
+              auto_ids: rechnungAutoIds,
+              discounted_autos: rechnungAutosWithDiscount,
+            });
+          }
+        }
       });
     }
   };
@@ -411,58 +456,73 @@ const DokumenteErstellen = () => {
 
       {/* Document Type Selection */}
       <Tabs value={documentType} onValueChange={(v) => setDocumentType(v as DocumentType)}>
-        <TabsList className="inline-flex gap-2">
-          <TabsTrigger value="rechnung">
-            <FileText className="w-4 h-4 mr-2" />
-            Rechnung
-          </TabsTrigger>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant={documentType === 'kaufvertrag' ? 'default' : 'ghost'}
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <Car className="w-4 h-4 mr-2" />
-                {documentType === 'kaufvertrag' ? getKaufvertragLabel(kaufvertragType) : 'Kaufvertrag'}
-                <ChevronDown className="w-3 h-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64">
-              <DropdownMenuItem 
-                onClick={() => {
-                  setDocumentType('kaufvertrag');
-                  setKaufvertragType('kaufvertrag-1-p');
-                }}
-              >
-                1 Fahrzeug (Privat)
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => {
-                  setDocumentType('kaufvertrag');
-                  setKaufvertragType('kaufvertrag-1-u');
-                }}
-              >
-                1 Fahrzeug (Unternehmen)
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => {
-                  setDocumentType('kaufvertrag');
-                  setKaufvertragType('kaufvertrag-m-p');
-                }}
-              >
-                Mehrere Fahrzeuge (Privat)
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => {
-                  setDocumentType('kaufvertrag');
-                  setKaufvertragType('kaufvertrag-m-u');
-                }}
-              >
-                Mehrere Fahrzeuge (Unternehmen)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </TabsList>
+        <div className="flex items-center gap-4">
+          <TabsList className="inline-flex gap-2">
+            <TabsTrigger value="rechnung">
+              <FileText className="w-4 h-4 mr-2" />
+              Rechnung
+            </TabsTrigger>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant={documentType === 'kaufvertrag' ? 'default' : 'ghost'}
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <Car className="w-4 h-4 mr-2" />
+                  {documentType === 'kaufvertrag' ? getKaufvertragLabel(kaufvertragType) : 'Kaufvertrag'}
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64">
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setDocumentType('kaufvertrag');
+                    setKaufvertragType('kaufvertrag-1-p');
+                  }}
+                >
+                  1 Fahrzeug (Privat)
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setDocumentType('kaufvertrag');
+                    setKaufvertragType('kaufvertrag-1-u');
+                  }}
+                >
+                  1 Fahrzeug (Unternehmen)
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setDocumentType('kaufvertrag');
+                    setKaufvertragType('kaufvertrag-m-p');
+                  }}
+                >
+                  Mehrere Fahrzeuge (Privat)
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setDocumentType('kaufvertrag');
+                    setKaufvertragType('kaufvertrag-m-u');
+                  }}
+                >
+                  Mehrere Fahrzeuge (Unternehmen)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </TabsList>
+          
+          {documentType === 'kaufvertrag' && (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="include-rechnung"
+                checked={includeRechnung}
+                onCheckedChange={setIncludeRechnung}
+              />
+              <Label htmlFor="include-rechnung" className="text-sm font-medium cursor-pointer">
+                inkl. Rechnung
+              </Label>
+            </div>
+          )}
+        </div>
 
         <TabsContent value="rechnung" className="mt-6 space-y-6">
           {/* Invoice/Contract Details */}

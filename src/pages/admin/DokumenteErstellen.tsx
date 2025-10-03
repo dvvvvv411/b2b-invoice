@@ -411,15 +411,57 @@ const DokumenteErstellen = () => {
 
       {/* Document Type Selection */}
       <Tabs value={documentType} onValueChange={(v) => setDocumentType(v as DocumentType)}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="inline-flex gap-2">
           <TabsTrigger value="rechnung">
             <FileText className="w-4 h-4 mr-2" />
             Rechnung
           </TabsTrigger>
-          <TabsTrigger value="kaufvertrag">
-            <Car className="w-4 h-4 mr-2" />
-            Kaufvertrag
-          </TabsTrigger>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant={documentType === 'kaufvertrag' ? 'default' : 'ghost'}
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <Car className="w-4 h-4 mr-2" />
+                Kaufvertrag
+                <ChevronDown className="w-3 h-3 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuItem 
+                onClick={() => {
+                  setDocumentType('kaufvertrag');
+                  setKaufvertragType('kaufvertrag-1-p');
+                }}
+              >
+                1 Fahrzeug (Privat)
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => {
+                  setDocumentType('kaufvertrag');
+                  setKaufvertragType('kaufvertrag-1-u');
+                }}
+              >
+                1 Fahrzeug (Unternehmen)
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => {
+                  setDocumentType('kaufvertrag');
+                  setKaufvertragType('kaufvertrag-m-p');
+                }}
+              >
+                Mehrere Fahrzeuge (Privat)
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => {
+                  setDocumentType('kaufvertrag');
+                  setKaufvertragType('kaufvertrag-m-u');
+                }}
+              >
+                Mehrere Fahrzeuge (Unternehmen)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </TabsList>
 
         <TabsContent value="rechnung" className="mt-6 space-y-6">
@@ -1052,43 +1094,6 @@ const DokumenteErstellen = () => {
         </TabsContent>
 
         <TabsContent value="kaufvertrag" className="mt-6 space-y-6">
-          {/* Kaufvertrag Type Dropdown */}
-          <Card className="glass border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-gradient-primary">Kaufvertrag-Art auswählen</CardTitle>
-              <CardDescription>
-                Wählen Sie die Art des Kaufvertrags
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label>Kaufvertrag-Art *</Label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between">
-                      {getKaufvertragLabel(kaufvertragType)}
-                      <ChevronDown className="w-4 h-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-full">
-                    <DropdownMenuItem onClick={() => setKaufvertragType('kaufvertrag-1-p')}>
-                      1 Fahrzeug (Privat)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setKaufvertragType('kaufvertrag-1-u')}>
-                      1 Fahrzeug (Unternehmen)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setKaufvertragType('kaufvertrag-m-p')}>
-                      Mehrere Fahrzeuge (Privat)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setKaufvertragType('kaufvertrag-m-u')}>
-                      Mehrere Fahrzeuge (Unternehmen)
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Contract Details */}
           <Card className="glass border-primary/20">
             <CardHeader>

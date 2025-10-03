@@ -12,6 +12,28 @@ export interface GenerateKaufvertragInput {
   auto_id: string;
 }
 
+const base64ToBlob = (base64: string, type: string = 'application/pdf'): Blob => {
+  const byteCharacters = atob(base64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  return new Blob([byteArray], { type });
+};
+
+const downloadPDF = (base64: string, filename: string) => {
+  const blob = base64ToBlob(base64);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 export const useGenerateKaufvertragPDF = () => {
   const { toast } = useToast();
   const [lastRequestData, setLastRequestData] = useState<GenerateKaufvertragInput | null>(null);
@@ -26,20 +48,19 @@ export const useGenerateKaufvertragPDF = () => {
         body: input,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Fehler bei der PDF-Generierung');
+      }
+
+      if (!data || !data.base64) {
+        throw new Error('Keine PDF-Daten erhalten');
+      }
+
       return data;
     },
     onSuccess: (data) => {
-      // Data is the PDF blob from the edge function
-      const blob = new Blob([data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'Kaufvertrag.pdf';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      downloadPDF(data.base64, 'Kaufvertrag.pdf');
 
       toast({
         title: 'Erfolg',

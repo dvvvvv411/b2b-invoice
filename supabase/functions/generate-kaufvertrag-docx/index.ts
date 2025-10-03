@@ -202,18 +202,24 @@ serve(async (req) => {
       throw new Error(`Docmosis error: ${docmosisResponse.status}`);
     }
 
-    const docxBlob = await docmosisResponse.blob();
-    const docxBuffer = await docxBlob.arrayBuffer();
+    const docxBuffer = await docmosisResponse.arrayBuffer();
+    
+    // Convert to Base64 for reliable transmission
+    const base64Docx = btoa(
+      new Uint8Array(docxBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
 
     console.log('Kaufvertrag DOCX generated successfully');
 
-    return new Response(docxBuffer, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': `attachment; filename="Kaufvertrag_${auto.marke}_${auto.modell}.docx"`,
-      },
-    });
+    return new Response(
+      JSON.stringify({ base64: base64Docx }),
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
   } catch (error) {
     console.error('Error in generate-kaufvertrag-docx function:', error);

@@ -218,18 +218,24 @@ serve(async (req) => {
       throw new Error(`Docmosis error: ${docmosisResponse.status}`);
     }
 
-    const pdfBlob = await docmosisResponse.blob();
-    const pdfBuffer = await pdfBlob.arrayBuffer();
+    const pdfBuffer = await docmosisResponse.arrayBuffer();
+    
+    // Convert to Base64 for reliable transmission
+    const base64Pdf = btoa(
+      new Uint8Array(pdfBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
 
     console.log('Kaufvertrag PDF generated successfully');
 
-    return new Response(pdfBuffer, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="Kaufvertrag_${auto.marke}_${auto.modell}.pdf"`,
-      },
-    });
+    return new Response(
+      JSON.stringify({ base64: base64Pdf }),
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
   } catch (error) {
     console.error('Error in generate-kaufvertrag-pdf function:', error);

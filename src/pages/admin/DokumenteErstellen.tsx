@@ -414,27 +414,27 @@ const DokumenteErstellen = () => {
             <CardContent className="space-y-4">
               
               {/* DEKRA Quick-Add Input */}
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Input
-                    placeholder="DEKRA-Nummer eingeben (z.B. 0993)"
-                    value={dekraInput}
-                    onChange={(e) => setDekraInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddByDekra();
-                      }
-                    }}
-                    className="font-mono"
-                  />
-                </div>
+              <div className="flex gap-2 items-center">
+                <Input
+                  placeholder="0993"
+                  value={dekraInput}
+                  onChange={(e) => setDekraInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddByDekra();
+                    }
+                  }}
+                  maxLength={5}
+                  className="font-mono text-2xl font-bold w-32 h-16 text-center"
+                />
                 <Button
                   variant="secondary"
+                  size="lg"
                   onClick={handleAddByDekra}
                   disabled={!dekraInput.trim()}
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-5 h-5 mr-2" />
                   Hinzufügen
                 </Button>
               </div>

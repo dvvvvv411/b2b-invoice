@@ -21,8 +21,15 @@ import { useGenerateKaufvertragPDF, useGenerateKaufvertragJSON } from '@/hooks/u
 import { useGenerateKaufvertragDOCX } from '@/hooks/useGenerateKaufvertragDOCX';
 import { formatPrice } from '@/lib/formatters';
 
+type DocumentType = 
+  | 'rechnung' 
+  | 'kaufvertrag-1-p'
+  | 'kaufvertrag-1-u'
+  | 'kaufvertrag-m-p'
+  | 'kaufvertrag-m-u';
+
 const DokumenteErstellen = () => {
-  const [documentType, setDocumentType] = useState<'rechnung' | 'kaufvertrag'>('rechnung');
+  const [documentType, setDocumentType] = useState<DocumentType>('rechnung');
   const [kanzlei, setKanzlei] = useState<string>('');
   const [kunde, setKunde] = useState<string>('');
   const [bankkonto, setBankkonto] = useState<string>('');
@@ -50,15 +57,42 @@ const DokumenteErstellen = () => {
   const mwst = nettopreis * 0.19;
   const bruttopreis = nettopreis + mwst;
 
-  // Calculate totals for Kaufvertrag
+  // Helper functions
+  const getTemplateName = (docType: DocumentType): string => {
+    const templateMap: Record<DocumentType, string> = {
+      'rechnung': '',
+      'kaufvertrag-1-p': 'Kaufvertrag-1-P.docx',
+      'kaufvertrag-1-u': 'Kaufvertrag-1-U.docx',
+      'kaufvertrag-m-p': 'Kaufvertrag-M-P.docx',
+      'kaufvertrag-m-u': 'Kaufvertrag-M-U.docx',
+    };
+    return templateMap[docType];
+  };
+
+  const isKaufvertrag = documentType.startsWith('kaufvertrag-');
+  const isSingleVehicleKaufvertrag = documentType.includes('-1-');
+  const isMultipleVehicleKaufvertrag = documentType.includes('-m-');
+
+  // Calculate totals for Kaufvertrag single vehicle
   const selectedAuto = autos.find(auto => auto.id === selectedAutoId);
   const kaufvertragNettopreis = selectedAuto?.einzelpreis_netto || 0;
   const kaufvertragBruttopreis = kaufvertragNettopreis * 1.19;
 
+  // Calculate totals for Kaufvertrag multiple vehicles
+  const kaufvertragMultipleNettopreis = isMultipleVehicleKaufvertrag
+    ? selectedAutos.reduce((sum, auto) => sum + (auto.einzelpreis_netto || 0), 0)
+    : 0;
+  const kaufvertragMultipleBruttopreis = kaufvertragMultipleNettopreis * 1.19;
+
   // Validation
   const isValidRechnung = kanzlei && kunde && bankkonto && insolventesUnternehmen && autoIds.length > 0;
-  const isValidKaufvertrag = kanzlei && kunde && bankkonto && insolventesUnternehmen && spedition && selectedAutoId;
-  const isValid = documentType === 'rechnung' ? isValidRechnung : isValidKaufvertrag;
+  const isValidKaufvertragSingle = kanzlei && kunde && bankkonto && insolventesUnternehmen && spedition && selectedAutoId;
+  const isValidKaufvertragMultiple = kanzlei && kunde && bankkonto && insolventesUnternehmen && spedition && autoIds.length > 0;
+  
+  const isValid = 
+    documentType === 'rechnung' 
+      ? isValidRechnung 
+      : (isSingleVehicleKaufvertrag ? isValidKaufvertragSingle : isValidKaufvertragMultiple);
 
   const handleToggleAuto = (autoId: string) => {
     setAutoIds(prev =>
@@ -94,7 +128,11 @@ const DokumenteErstellen = () => {
         bankkonto_id: bankkonto,
         insolvente_unternehmen_id: insolventesUnternehmen,
         spedition_id: spedition,
-        auto_id: selectedAutoId,
+        ...(isSingleVehicleKaufvertrag 
+          ? { auto_id: selectedAutoId }
+          : { auto_ids: autoIds }
+        ),
+        templateName: getTemplateName(documentType),
       });
     }
   };
@@ -117,7 +155,11 @@ const DokumenteErstellen = () => {
         bankkonto_id: bankkonto,
         insolvente_unternehmen_id: insolventesUnternehmen,
         spedition_id: spedition,
-        auto_id: selectedAutoId,
+        ...(isSingleVehicleKaufvertrag 
+          ? { auto_id: selectedAutoId }
+          : { auto_ids: autoIds }
+        ),
+        templateName: getTemplateName(documentType),
       });
     }
   };
@@ -146,15 +188,27 @@ const DokumenteErstellen = () => {
       </div>
 
       {/* Document Type Selection */}
-      <Tabs value={documentType} onValueChange={(v) => setDocumentType(v as 'rechnung' | 'kaufvertrag')}>
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs value={documentType} onValueChange={(v) => setDocumentType(v as DocumentType)}>
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="rechnung">
             <FileText className="w-4 h-4 mr-2" />
-            Rechnung erstellen
+            Rechnung
           </TabsTrigger>
-          <TabsTrigger value="kaufvertrag">
+          <TabsTrigger value="kaufvertrag-1-p">
             <Car className="w-4 h-4 mr-2" />
-            Kaufvertrag 1 Fahrzeug (Privat)
+            KV 1 Fzg (Privat)
+          </TabsTrigger>
+          <TabsTrigger value="kaufvertrag-1-u">
+            <Car className="w-4 h-4 mr-2" />
+            KV 1 Fzg (Unternehmen)
+          </TabsTrigger>
+          <TabsTrigger value="kaufvertrag-m-p">
+            <Car className="w-4 h-4 mr-2" />
+            KV Mehrere (Privat)
+          </TabsTrigger>
+          <TabsTrigger value="kaufvertrag-m-u">
+            <Car className="w-4 h-4 mr-2" />
+            KV Mehrere (Unternehmen)
           </TabsTrigger>
         </TabsList>
 
@@ -242,7 +296,7 @@ const DokumenteErstellen = () => {
                 </div>
 
                 {/* Spedition - nur bei Kaufvertrag */}
-                {documentType === 'kaufvertrag' && (
+                {isKaufvertrag && (
                   <div className="space-y-2">
                     <Label htmlFor="spedition">Spedition *</Label>
                     <Select value={spedition} onValueChange={setSpedition}>
@@ -269,15 +323,17 @@ const DokumenteErstellen = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-gradient-primary">
-                    {documentType === 'rechnung' ? 'Fahrzeuge auswählen' : 'Fahrzeug auswählen'}
+                    {documentType === 'rechnung' || isMultipleVehicleKaufvertrag
+                      ? 'Fahrzeuge auswählen (mehrere möglich)'
+                      : 'Fahrzeug auswählen (nur eines)'}
                   </CardTitle>
                   <CardDescription>
-                    {documentType === 'rechnung' 
+                    {documentType === 'rechnung' || isMultipleVehicleKaufvertrag
                       ? `${autoIds.length} von ${autos.length} Fahrzeugen ausgewählt`
                       : 'Wählen Sie ein Fahrzeug für den Kaufvertrag'}
                   </CardDescription>
                 </div>
-                {documentType === 'rechnung' && (
+                {(documentType === 'rechnung' || isMultipleVehicleKaufvertrag) && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -290,7 +346,7 @@ const DokumenteErstellen = () => {
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[300px] pr-4">
-                {documentType === 'rechnung' ? (
+                {(documentType === 'rechnung' || isMultipleVehicleKaufvertrag) ? (
                   <div className="space-y-3">
                     {autos.map((auto) => (
                       <div
@@ -363,7 +419,8 @@ const DokumenteErstellen = () => {
 
           {/* Summary */}
           {((documentType === 'rechnung' && autoIds.length > 0) || 
-            (documentType === 'kaufvertrag' && selectedAutoId)) && (
+            (isSingleVehicleKaufvertrag && selectedAutoId) ||
+            (isMultipleVehicleKaufvertrag && autoIds.length > 0)) && (
             <Card className="glass border-secondary/20">
               <CardHeader>
                 <CardTitle className="text-gradient-secondary">
@@ -374,20 +431,32 @@ const DokumenteErstellen = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Nettopreis:</span>
                   <span className="font-bold text-lg">
-                    {formatPrice(documentType === 'rechnung' ? nettopreis : kaufvertragNettopreis)}
+                    {formatPrice(
+                      documentType === 'rechnung' 
+                        ? nettopreis 
+                        : (isSingleVehicleKaufvertrag ? kaufvertragNettopreis : kaufvertragMultipleNettopreis)
+                    )}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">MwSt (19%):</span>
                   <span className="font-bold text-lg">
-                    {formatPrice(documentType === 'rechnung' ? mwst : kaufvertragNettopreis * 0.19)}
+                    {formatPrice(
+                      documentType === 'rechnung' 
+                        ? mwst 
+                        : (isSingleVehicleKaufvertrag ? kaufvertragNettopreis * 0.19 : kaufvertragMultipleNettopreis * 0.19)
+                    )}
                   </span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Bruttopreis:</span>
                   <span className="font-bold text-2xl text-gradient-primary">
-                    {formatPrice(documentType === 'rechnung' ? bruttopreis : kaufvertragBruttopreis)}
+                    {formatPrice(
+                      documentType === 'rechnung' 
+                        ? bruttopreis 
+                        : (isSingleVehicleKaufvertrag ? kaufvertragBruttopreis : kaufvertragMultipleBruttopreis)
+                    )}
                   </span>
                 </div>
               </CardContent>
@@ -398,7 +467,7 @@ const DokumenteErstellen = () => {
           <Card className="glass border-primary/20">
             <CardContent className="pt-6">
               <div className="flex flex-col sm:flex-row gap-3 justify-end">
-                {documentType === 'kaufvertrag' && (
+                {isSingleVehicleKaufvertrag && (
                   <Button
                     variant="outline"
                     size="lg"
@@ -469,7 +538,7 @@ const DokumenteErstellen = () => {
           </Card>
 
           {/* Debug Card - Complete JSON Data */}
-          {documentType === 'kaufvertrag' && generateKaufvertragJSONMutation.data && (
+          {isSingleVehicleKaufvertrag && generateKaufvertragJSONMutation.data && (
             <Card className="glass border-yellow-500/30">
               <CardHeader>
                 <CardTitle className="text-yellow-500 flex items-center gap-2">

@@ -53,25 +53,27 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
+    const requestBody = await req.json();
     const { 
       kanzlei_id,
       kunde_id,
       bankkonto_id,
       insolvente_unternehmen_id,
       spedition_id,
-      auto_id
-    } = await req.json();
+      auto_id,
+      auto_ids,
+      templateName = 'Kaufvertrag-1-P.docx'
+    } = requestBody;
 
-    console.log('Generating Kaufvertrag DOCX with:', { kanzlei_id, kunde_id, bankkonto_id, insolvente_unternehmen_id, spedition_id, auto_id });
+    console.log('Generating Kaufvertrag DOCX with:', { kanzlei_id, kunde_id, bankkonto_id, insolvente_unternehmen_id, spedition_id, auto_id, auto_ids, templateName });
 
-    // Fetch all required data with user_id filter for RLS
-    const [kanzleiResult, kundeResult, bankkontoResult, insoResult, speditionResult, autoResult] = await Promise.all([
+    // Fetch all required data with user_id filter for RLS (except autos)
+    const [kanzleiResult, kundeResult, bankkontoResult, insoResult, speditionResult] = await Promise.all([
       supabase.from('anwaltskanzleien').select('*').eq('id', kanzlei_id).eq('user_id', userId).single(),
       supabase.from('kunden').select('*').eq('id', kunde_id).eq('user_id', userId).single(),
       supabase.from('bankkonten').select('*').eq('id', bankkonto_id).eq('user_id', userId).single(),
       supabase.from('insolvente_unternehmen').select('*').eq('id', insolvente_unternehmen_id).eq('user_id', userId).single(),
-      supabase.from('speditionen').select('*').eq('id', spedition_id).eq('user_id', userId).single(),
-      supabase.from('autos').select('*').eq('id', auto_id).eq('user_id', userId).single()
+      supabase.from('speditionen').select('*').eq('id', spedition_id).eq('user_id', userId).single()
     ]);
 
     if (kanzleiResult.error) throw kanzleiResult.error;
@@ -79,17 +81,46 @@ serve(async (req) => {
     if (bankkontoResult.error) throw bankkontoResult.error;
     if (insoResult.error) throw insoResult.error;
     if (speditionResult.error) throw speditionResult.error;
-    if (autoResult.error) throw autoResult.error;
 
     const kanzlei = kanzleiResult.data;
     const kunde = kundeResult.data;
     const bankkonto = bankkontoResult.data;
     const inso = insoResult.data;
     const spedition = speditionResult.data;
-    const auto = autoResult.data;
 
-    // Calculate prices
-    const nettopreis = auto.einzelpreis_netto || 0;
+    // Fetch autos - flexible for single or multiple vehicles
+    let autosData;
+    if (auto_ids && auto_ids.length > 0) {
+      // Multiple vehicles
+      const { data: autos, error: autosError } = await supabase
+        .from('autos')
+        .select('*')
+        .in('id', auto_ids)
+        .eq('user_id', userId);
+      
+      if (autosError || !autos || autos.length === 0) {
+        throw new Error('Fehler beim Laden der Fahrzeuge');
+      }
+      autosData = autos;
+    } else if (auto_id) {
+      // Single vehicle
+      const { data: auto, error: autoError } = await supabase
+        .from('autos')
+        .select('*')
+        .eq('id', auto_id)
+        .eq('user_id', userId)
+        .single();
+      
+      if (autoError || !auto) {
+        throw new Error('Fahrzeug nicht gefunden');
+      }
+      autosData = [auto];
+    } else {
+      throw new Error('Keine Fahrzeug-IDs angegeben');
+    }
+
+    // Calculate prices for all vehicles
+    const nettopreis = autosData.reduce((sum, auto) => sum + (auto.einzelpreis_netto || 0), 0);
     const bruttopreis = nettopreis * 1.19;
 
     // Get amount in words
@@ -160,15 +191,15 @@ serve(async (req) => {
       handelsregister: inso.handelsregister || '',
       inso_adresse: inso.adresse || '',
       
-      autos: [{
+      autos: autosData.map(auto => ({
         marke: auto.marke || '',
         modell: auto.modell || '',
         fahrgestellnr: auto.fahrgestell_nr || '',
         dekranr: auto.dekra_bericht_nr || '',
         erstzulassung: formatDate(auto.erstzulassung),
         kilometer: formatKilometer(auto.kilometer || 0),
-        einzelpreis: formatPrice(nettopreis)
-      }],
+        einzelpreis: formatPrice(auto.einzelpreis_netto || 0)
+      })),
       
       nettopreis: formatPrice(nettopreis),
       nettopreis_worte: nettopreisInWorten,
@@ -194,7 +225,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         accessKey: DOCMOSIS_API_KEY,
-        templateName: 'Kaufvertrag-1-P.docx',
+        templateName: templateName,
         outputName: 'kaufvertrag.docx',
         data: jsonData
       })

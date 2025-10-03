@@ -9,7 +9,9 @@ export interface GenerateKaufvertragInput {
   bankkonto_id: string;
   insolvente_unternehmen_id: string;
   spedition_id: string;
-  auto_id: string;
+  auto_id?: string;
+  auto_ids?: string[];
+  templateName?: string;
 }
 
 const base64ToBlob = (base64: string, type: string = 'application/pdf'): Blob => {

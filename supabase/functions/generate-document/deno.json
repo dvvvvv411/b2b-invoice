@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "docxtemplater": "npm:docxtemplater@^3.47.0",
+    "pizzip": "npm:pizzip@^3.1.0"
+  }
+}

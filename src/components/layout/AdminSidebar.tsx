@@ -7,6 +7,8 @@ import {
   CreditCard,
   Truck,
   Factory,
+  FileText,
+  FileOutput,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -28,6 +30,8 @@ const menuItems = [
   { title: 'Bankkonten', url: '/admin/bankkonten', icon: CreditCard },
   { title: 'Speditionen', url: '/admin/speditionen', icon: Truck },
   { title: 'Insolvente Unternehmen', url: '/admin/insolvente-unternehmen', icon: Factory },
+  { title: 'Vorlagen verwalten', url: '/admin/vorlagen', icon: FileText },
+  { title: 'Dokument erstellen', url: '/admin/dokumente-generieren', icon: FileOutput },
 ];
 
 export function AdminSidebar() {

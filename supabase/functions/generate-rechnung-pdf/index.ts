@@ -65,6 +65,19 @@ serve(async (req) => {
       );
     }
 
+    // Extract user ID from JWT token
+    // JWT is already validated by Supabase (verify_jwt = true in config.toml)
+    const jwt = authHeader.replace('Bearer ', '');
+    const payload = JSON.parse(atob(jwt.split('.')[1]));
+    const userId = payload.sub;
+
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'Ungültiges Token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -73,16 +86,6 @@ serve(async (req) => {
         headers: { Authorization: authHeader },
       },
     });
-
-    // Get user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      console.error('User error:', userError);
-      return new Response(
-        JSON.stringify({ error: 'Nicht authentifiziert' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     // Parse request body
     const { kanzlei_id, kunde_id, bankkonto_id, insolvente_unternehmen_id, auto_ids } = await req.json();
@@ -95,16 +98,16 @@ serve(async (req) => {
       );
     }
 
-    console.log('Fetching data for user:', user.id);
+    console.log('Fetching data for user:', userId);
 
     // Fetch all data in parallel
     const [kanzleiResult, kundeResult, bankkontoResult, insolventResult, autosResult, rechnungsnummerResult] = await Promise.all([
-      supabase.from('anwaltskanzleien').select('*').eq('id', kanzlei_id).eq('user_id', user.id).single(),
-      supabase.from('kunden').select('*').eq('id', kunde_id).eq('user_id', user.id).single(),
-      supabase.from('bankkonten').select('*').eq('id', bankkonto_id).eq('user_id', user.id).single(),
-      supabase.from('insolvente_unternehmen').select('*').eq('id', insolvente_unternehmen_id).eq('user_id', user.id).single(),
-      supabase.from('autos').select('*').in('id', auto_ids).eq('user_id', user.id),
-      supabase.from('rechnungsnummern').select('*').eq('user_id', user.id).maybeSingle()
+      supabase.from('anwaltskanzleien').select('*').eq('id', kanzlei_id).eq('user_id', userId).single(),
+      supabase.from('kunden').select('*').eq('id', kunde_id).eq('user_id', userId).single(),
+      supabase.from('bankkonten').select('*').eq('id', bankkonto_id).eq('user_id', userId).single(),
+      supabase.from('insolvente_unternehmen').select('*').eq('id', insolvente_unternehmen_id).eq('user_id', userId).single(),
+      supabase.from('autos').select('*').in('id', auto_ids).eq('user_id', userId),
+      supabase.from('rechnungsnummern').select('*').eq('user_id', userId).maybeSingle()
     ]);
 
     // Check for errors
@@ -167,7 +170,7 @@ serve(async (req) => {
     } else {
       const { error: insertError } = await supabase
         .from('rechnungsnummern')
-        .insert({ user_id: user.id, letzte_nummer: neueNummer });
+        .insert({ user_id: userId, letzte_nummer: neueNummer });
       
       if (insertError) {
         console.error('Insert rechnungsnummer error:', insertError);

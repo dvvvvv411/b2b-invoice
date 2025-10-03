@@ -183,6 +183,7 @@ serve(async (req) => {
       kunde_unternehmen: kunde.name || '',
       kunde_strasse: kunde.adresse || '',
       kunde_plzstadt: `${kunde.plz || ''} ${kunde.stadt || ''}`.trim(),
+      kunde_geschaeftsfuehrer: kunde.geschaeftsfuehrer || '',
       
       datum: formatCurrentDate(),
       aktenzeichen: inso.aktenzeichen || '',

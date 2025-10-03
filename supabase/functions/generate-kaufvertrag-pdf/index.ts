@@ -156,13 +156,15 @@ serve(async (req) => {
       handelsregister: inso.handelsregister || '',
       inso_adresse: inso.adresse || '',
       
-      marke: auto.marke || '',
-      modell: auto.modell || '',
-      fahrgestellnr: auto.fahrgestell_nr || '',
-      dekranr: auto.dekra_bericht_nr || '',
-      erstzulassung: formatDate(auto.erstzulassung),
-      kilometer: formatKilometer(auto.kilometer || 0),
-      einzelpreis: formatPrice(nettopreis),
+      autos: [{
+        marke: auto.marke || '',
+        modell: auto.modell || '',
+        fahrgestellnr: auto.fahrgestell_nr || '',
+        dekranr: auto.dekra_bericht_nr || '',
+        erstzulassung: formatDate(auto.erstzulassung),
+        kilometer: formatKilometer(auto.kilometer || 0),
+        einzelpreis: formatPrice(nettopreis)
+      }],
       
       nettopreis: formatPrice(nettopreis),
       nettopreis_worte: nettopreisInWorten,
@@ -188,7 +190,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         accessKey: DOCMOSIS_API_KEY,
-        templateName: 'Kaufvertrag 1 Fahrzeug Privat.docx',
+        templateName: '/Kaufvertrag-1-P.docx',
         outputName: 'kaufvertrag.pdf',
         data: jsonData
       })

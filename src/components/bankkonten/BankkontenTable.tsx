@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Bankkonto, useDeleteBankkonto } from '@/hooks/useBankkonten';
 import { Search, Edit, Trash2 } from 'lucide-react';
+import { formatIBAN } from '@/lib/formatters';
 
 interface BankkontenTableProps {
   bankkonten: Bankkonto[];
@@ -40,10 +41,6 @@ export function BankkontenTable({
     bankkonto.iban.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bankkonto.bic.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const formatIban = (iban: string) => {
-    return iban.replace(/(.{4})/g, '$1 ').trim();
-  };
 
   const handleDelete = async () => {
     if (deleteBankkontoId) {
@@ -119,7 +116,7 @@ export function BankkontenTable({
                       {bankkonto.bankname || '-'}
                     </td>
                     <td className="py-3 px-4 text-muted-foreground font-mono text-sm">
-                      {formatIban(bankkonto.iban)}
+                      {formatIBAN(bankkonto.iban)}
                     </td>
                     <td className="py-3 px-4 text-muted-foreground font-mono text-sm">
                       {bankkonto.bic}

@@ -36,3 +36,28 @@ export const parseFormattedNumber = (value: string): number | null => {
   
   return isNaN(parsed) ? null : parsed;
 };
+
+/**
+ * Formatiert eine IBAN mit Leerzeichen alle 4 Zeichen
+ * Input: "DE89370400440532013001"
+ * Output: "DE89 3704 0044 0532 0130 01"
+ */
+export const formatIBAN = (iban: string): string => {
+  if (!iban) return '';
+  
+  // Entfernt alle Leerzeichen und konvertiert zu Großbuchstaben
+  const cleanIBAN = iban.replace(/\s/g, '').toUpperCase();
+  
+  // Fügt Leerzeichen alle 4 Zeichen ein
+  return cleanIBAN.match(/.{1,4}/g)?.join(' ') || cleanIBAN;
+};
+
+/**
+ * Entfernt Formatierung aus IBAN (für Validierung/Speicherung)
+ * Input: "DE89 3704 0044 0532 0130 01"
+ * Output: "DE89370400440532013001"
+ */
+export const unformatIBAN = (iban: string): string => {
+  if (!iban) return '';
+  return iban.replace(/\s/g, '').toUpperCase();
+};

@@ -21,15 +21,22 @@ import {
 } from '@/components/ui/form';
 import { Bankkonto, BankkontoInput, useCreateBankkonto, useUpdateBankkonto } from '@/hooks/useBankkonten';
 import { Loader2 } from 'lucide-react';
+import { formatIBAN, unformatIBAN } from '@/lib/formatters';
 
 const bankkontoSchema = z.object({
   kontoname: z.string().min(1, 'Kontoname ist erforderlich'),
   kontoinhaber: z.string().min(1, 'Kontoinhaber ist erforderlich'),
   bankname: z.string().min(1, 'Bankname ist erforderlich'),
   iban: z.string()
-    .min(22, 'IBAN muss mindestens 22 Zeichen haben')
-    .max(34, 'IBAN darf maximal 34 Zeichen haben')
-    .regex(/^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/, 'Ungültiges IBAN-Format'),
+    .transform(unformatIBAN)
+    .refine(
+      (val) => val.length >= 15 && val.length <= 34,
+      'IBAN muss zwischen 15 und 34 Zeichen haben'
+    )
+    .refine(
+      (val) => /^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/.test(val),
+      'Ungültiges IBAN-Format (z.B. DE89 3704 0044 0532 0130 00)'
+    ),
   bic: z.string()
     .min(8, 'BIC muss mindestens 8 Zeichen haben')
     .max(11, 'BIC darf maximal 11 Zeichen haben')
@@ -68,7 +75,7 @@ export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenForm
         kontoname: bankkonto.kontoname || '',
         kontoinhaber: bankkonto.kontoinhaber || '',
         bankname: bankkonto.bankname || '',
-        iban: bankkonto.iban || '',
+        iban: formatIBAN(bankkonto.iban || ''),
         bic: bankkonto.bic || '',
       });
     } else if (open && !bankkonto) {
@@ -85,10 +92,16 @@ export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenForm
 
   const onSubmit = async (data: BankkontoInput) => {
     try {
+      // Entfernt Formatierung vor dem Speichern
+      const cleanedData = {
+        ...data,
+        iban: unformatIBAN(data.iban),
+      };
+      
       if (isEditing && bankkonto) {
-        await updateBankkonto.mutateAsync({ id: bankkonto.id, bankkonto: data });
+        await updateBankkonto.mutateAsync({ id: bankkonto.id, bankkonto: cleanedData });
       } else {
-        await createBankkonto.mutateAsync(data);
+        await createBankkonto.mutateAsync(cleanedData);
       }
       
       handleClose();
@@ -163,7 +176,20 @@ export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenForm
                   <FormItem>
                     <FormLabel>IBAN *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="DE89370400440532013000" />
+                      <Input 
+                        {...field}
+                        placeholder="DE89 3704 0044 0532 0130 00"
+                        value={field.value ? formatIBAN(field.value) : ''}
+                        onChange={(e) => {
+                          const formatted = formatIBAN(e.target.value);
+                          field.onChange(formatted);
+                        }}
+                        onBlur={(e) => {
+                          const formatted = formatIBAN(e.target.value);
+                          field.onChange(formatted);
+                          field.onBlur();
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

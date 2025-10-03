@@ -39,9 +39,10 @@ interface KundenFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   kunde?: Kunde;
+  onSuccess?: (kunde: Kunde) => void;
 }
 
-export function KundenForm({ open, onOpenChange, kunde }: KundenFormProps) {
+export function KundenForm({ open, onOpenChange, kunde, onSuccess }: KundenFormProps) {
   const createKunde = useCreateKunde();
   const updateKunde = useUpdateKunde();
   const { toast } = useToast();
@@ -139,7 +140,10 @@ export function KundenForm({ open, onOpenChange, kunde }: KundenFormProps) {
       if (isEditing && kunde) {
         await updateKunde.mutateAsync({ id: kunde.id, kunde: data });
       } else {
-        await createKunde.mutateAsync(data);
+        const newKunde = await createKunde.mutateAsync(data);
+        if (onSuccess && newKunde) {
+          onSuccess(newKunde);
+        }
       }
       
       handleClose();

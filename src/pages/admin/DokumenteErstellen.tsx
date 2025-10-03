@@ -25,6 +25,8 @@ import { useGenerateRechnungDOCX } from '@/hooks/useGenerateRechnungDOCX';
 import { useGenerateKaufvertragPDF, useGenerateKaufvertragJSON } from '@/hooks/useGenerateKaufvertragPDF';
 import { useGenerateKaufvertragDOCX } from '@/hooks/useGenerateKaufvertragDOCX';
 import { formatPrice } from '@/lib/formatters';
+import { KundenForm } from '@/components/kunden/KundenForm';
+import { BankkontenForm } from '@/components/bankkonten/BankkontenForm';
 
 type DocumentType = 
   | 'rechnung' 
@@ -46,6 +48,8 @@ const DokumenteErstellen = () => {
   const [bulkDekraInput, setBulkDekraInput] = useState<string>('');
   const [discountPercentage, setDiscountPercentage] = useState<string>('');
   const [applyDiscount, setApplyDiscount] = useState<boolean>(false);
+  const [isKundenFormOpen, setIsKundenFormOpen] = useState<boolean>(false);
+  const [isBankkontenFormOpen, setIsBankkontenFormOpen] = useState<boolean>(false);
 
   const { toast } = useToast();
 
@@ -440,35 +444,57 @@ const DokumenteErstellen = () => {
                 {/* Kunde */}
                 <div className="space-y-2">
                   <Label htmlFor="kunde">Kunde *</Label>
-                  <Select value={kunde} onValueChange={setKunde}>
-                    <SelectTrigger id="kunde">
-                      <SelectValue placeholder="Kunde auswählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {kunden.map((k) => (
-                        <SelectItem key={k.id} value={k.id}>
-                          {k.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select value={kunde} onValueChange={setKunde}>
+                      <SelectTrigger id="kunde" className="flex-1">
+                        <SelectValue placeholder="Kunde auswählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {kunden.map((k) => (
+                          <SelectItem key={k.id} value={k.id}>
+                            {k.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsKundenFormOpen(true)}
+                      className="shrink-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Bankkonto */}
                 <div className="space-y-2">
                   <Label htmlFor="bankkonto">Bankkonto *</Label>
-                  <Select value={bankkonto} onValueChange={setBankkonto}>
-                    <SelectTrigger id="bankkonto">
-                      <SelectValue placeholder="Bankkonto auswählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {bankkonten.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.kontoname || b.iban}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select value={bankkonto} onValueChange={setBankkonto}>
+                      <SelectTrigger id="bankkonto" className="flex-1">
+                        <SelectValue placeholder="Bankkonto auswählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bankkonten.map((b) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.kontoname || b.iban}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsBankkontenFormOpen(true)}
+                      className="shrink-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Insolventes Unternehmen */}
@@ -954,6 +980,26 @@ const DokumenteErstellen = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Kunden Form Dialog */}
+      <KundenForm
+        open={isKundenFormOpen}
+        onOpenChange={setIsKundenFormOpen}
+        onSuccess={(newKunde) => {
+          setKunde(newKunde.id);
+          setIsKundenFormOpen(false);
+        }}
+      />
+
+      {/* Bankkonten Form Dialog */}
+      <BankkontenForm
+        open={isBankkontenFormOpen}
+        onOpenChange={setIsBankkontenFormOpen}
+        onSuccess={(newBankkonto) => {
+          setBankkonto(newBankkonto.id);
+          setIsBankkontenFormOpen(false);
+        }}
+      />
     </div>
   );
 };

@@ -47,9 +47,10 @@ interface BankkontenFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   bankkonto?: Bankkonto;
+  onSuccess?: (bankkonto: Bankkonto) => void;
 }
 
-export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenFormProps) {
+export function BankkontenForm({ open, onOpenChange, bankkonto, onSuccess }: BankkontenFormProps) {
   const createBankkonto = useCreateBankkonto();
   const updateBankkonto = useUpdateBankkonto();
   
@@ -101,7 +102,10 @@ export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenForm
       if (isEditing && bankkonto) {
         await updateBankkonto.mutateAsync({ id: bankkonto.id, bankkonto: cleanedData });
       } else {
-        await createBankkonto.mutateAsync(cleanedData);
+        const newBankkonto = await createBankkonto.mutateAsync(cleanedData);
+        if (onSuccess && newBankkonto) {
+          onSuccess(newBankkonto);
+        }
       }
       
       handleClose();

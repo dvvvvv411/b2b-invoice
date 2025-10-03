@@ -23,15 +23,15 @@ All colors MUST be HSL.
     --primary-foreground: 220 15% 8%;
     --primary-glow: 142 76% 50%;
 
-    /* Secondary: Gaming purple */
-    --secondary: 270 91% 65%;
+    /* Secondary: Lighter Gaming green */
+    --secondary: 142 76% 46%;
     --secondary-foreground: 220 15% 8%;
-    --secondary-glow: 270 91% 75%;
+    --secondary-glow: 142 86% 56%;
 
     --muted: 220 15% 15%;
     --muted-foreground: 160 5% 65%;
 
-    --accent: 270 91% 65%;
+    --accent: 142 76% 36%;
     --accent-foreground: 220 15% 8%;
 
     --destructive: 0 84% 60%;
@@ -45,19 +45,19 @@ All colors MUST be HSL.
 
     /* Custom gaming colors */
     --neon-green: 142 100% 50%;
-    --neon-purple: 270 100% 70%;
+    --neon-green-bright: 142 90% 60%;
     --glass-bg: 220 15% 12%;
     --glass-border: 220 15% 25%;
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
-    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--secondary-glow)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--primary) / 0.8), hsl(var(--secondary) / 0.8));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary-glow)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary) / 0.8), hsl(var(--secondary) / 0.6));
     --gradient-glass: linear-gradient(135deg, hsl(var(--glass-bg) / 0.4), hsl(var(--glass-bg) / 0.1));
     
     /* Shadows */
     --shadow-neon-green: 0 0 20px hsl(var(--neon-green) / 0.3);
-    --shadow-neon-purple: 0 0 20px hsl(var(--neon-purple) / 0.3);
+    --shadow-neon-bright: 0 0 20px hsl(var(--secondary) / 0.3);
     --shadow-glass: 0 8px 32px hsl(220 15% 5% / 0.3);
 
     --radius: 1rem;
@@ -196,7 +196,7 @@ All colors MUST be HSL.
 
 @keyframes pulse-glow {
   0% { box-shadow: 0 0 5px hsl(var(--primary) / 0.3); }
-  100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.8), 0 0 30px hsl(var(--secondary) / 0.4); }
+  100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.8), 0 0 30px hsl(var(--secondary) / 0.5); }
 }
 
 @keyframes particle-float {

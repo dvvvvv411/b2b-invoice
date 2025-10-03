@@ -31,7 +31,7 @@ export function AdminHeader() {
           <span>{user?.email}</span>
         </div>
         
-        <Button variant="ghost" size="sm" className="hover:neon-glow-purple">
+        <Button variant="ghost" size="sm" className="hover:neon-glow-green">
           <Settings className="w-4 h-4" />
         </Button>
         

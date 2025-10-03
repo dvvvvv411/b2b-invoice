@@ -47,8 +47,8 @@ export function AdminSidebar() {
 
   const getNavClass = (path: string) =>
     isActive(path) 
-      ? 'bg-gradient-to-r from-primary/20 to-secondary/20 text-primary border border-primary/30 neon-glow-green' 
-      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:neon-glow-purple';
+      ? 'bg-gradient-to-r from-primary/20 to-primary-glow/20 text-primary border border-primary/30 neon-glow-green' 
+      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:neon-glow-green';
 
   return (
     <Sidebar className="border-r border-border/20 bg-background">

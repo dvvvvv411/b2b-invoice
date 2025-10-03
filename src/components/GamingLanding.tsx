@@ -86,12 +86,12 @@ const GamingLanding = () => {
             <div className="inline-flex items-center gap-2 glass rounded-full px-6 py-3 mb-6">
               <Crown className="w-5 h-5 text-primary" />
               <span className="text-sm font-medium">Level Up Your Business</span>
-              <Sparkles className="w-4 h-4 text-secondary" />
+              <Sparkles className="w-4 h-4 text-primary" />
             </div>
             
             <h1 className="text-7xl md:text-8xl font-bold tracking-tight font-orbitron">
               <span className="text-gradient-primary">B2B</span>{" "}
-              <span className="text-gradient-secondary">Panel</span>
+              <span className="text-gradient-primary">Panel</span>
             </h1>
             
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
@@ -127,11 +127,11 @@ const GamingLanding = () => {
             {features.map((feature, index) => (
               <Card 
                 key={index} 
-                className="glass p-6 hover:neon-glow-purple transition-all duration-300 transform hover:scale-105 border-border/20"
+                className="glass p-6 hover:neon-glow-green transition-all duration-300 transform hover:scale-105 border-border/20"
                 style={{ animationDelay: `${index * 0.2}s` }}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 text-primary">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-primary/20 to-primary-glow/30 text-primary">
                     {feature.icon}
                   </div>
                   <Badge variant="outline" className="text-xs font-bold border-primary/30 text-primary">
@@ -148,7 +148,7 @@ const GamingLanding = () => {
 
           {/* Main Dashboard Preview */}
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-3xl blur-xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary-glow/20 rounded-3xl blur-xl"></div>
             <Card className="glass relative border-primary/20 overflow-hidden">
               <div className="p-8">
                 <div className="flex items-center justify-between mb-6">
@@ -177,12 +177,12 @@ const GamingLanding = () => {
                     <div className="text-2xl font-bold text-gradient-primary">+127%</div>
                   </div>
                   
-                  <div className="glass p-6 rounded-xl border-secondary/10">
+                  <div className="glass p-6 rounded-xl border-primary/10">
                     <div className="flex items-center gap-3 mb-2">
-                      <Users className="w-5 h-5 text-secondary" />
+                      <Users className="w-5 h-5 text-primary" />
                       <span className="text-sm text-muted-foreground">Active Users</span>
                     </div>
-                    <div className="text-2xl font-bold text-gradient-secondary">2.4k</div>
+                    <div className="text-2xl font-bold text-gradient-primary">2.4k</div>
                   </div>
                   
                   <div className="glass p-6 rounded-xl border-neon-green/20">
@@ -200,7 +200,7 @@ const GamingLanding = () => {
                     <Shield className="w-4 h-4 mr-2" />
                     Security Center
                   </Button>
-                  <Button variant="hero" className="px-6">
+                  <Button variant="gaming" className="px-6">
                     <BarChart3 className="w-4 h-4 mr-2" />
                     Analytics Hub
                   </Button>

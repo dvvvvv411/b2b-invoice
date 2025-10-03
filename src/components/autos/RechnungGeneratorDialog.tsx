@@ -5,13 +5,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
-import { FileText, Loader2 } from 'lucide-react';
+import { FileText, FileType, Loader2 } from 'lucide-react';
 import { useKanzleien } from '@/hooks/useKanzleien';
 import { useKunden } from '@/hooks/useKunden';
 import { useBankkonten } from '@/hooks/useBankkonten';
 import { useInsolventeUnternehmen } from '@/hooks/useInsolventeUnternehmen';
 import { useAutos } from '@/hooks/useAutos';
 import { useGenerateRechnungPDF } from '@/hooks/useGenerateRechnungPDF';
+import { useGenerateRechnungDOCX } from '@/hooks/useGenerateRechnungDOCX';
 import { formatPrice } from '@/lib/formatters';
 
 interface RechnungGeneratorDialogProps {
@@ -32,6 +33,7 @@ export const RechnungGeneratorDialog = ({ open, onOpenChange }: RechnungGenerato
   const { data: insolventeUnternehmen = [], isLoading: loadingInsolvent } = useInsolventeUnternehmen();
   const { data: autos = [], isLoading: loadingAutos } = useAutos();
   const generatePDF = useGenerateRechnungPDF();
+  const generateDOCX = useGenerateRechnungDOCX();
 
   // Calculate sums
   const selectedAutos = autos.filter(a => selectedAutoIds.includes(a.id));
@@ -74,10 +76,22 @@ export const RechnungGeneratorDialog = ({ open, onOpenChange }: RechnungGenerato
     }
   };
 
-  const handleGenerate = () => {
+  const handleGeneratePDF = () => {
     if (!isValid) return;
 
     generatePDF.mutate({
+      kanzlei_id: selectedKanzlei,
+      kunde_id: selectedKunde,
+      bankkonto_id: selectedBankkonto,
+      insolvente_unternehmen_id: selectedInsolventesUnternehmen,
+      auto_ids: selectedAutoIds,
+    });
+  };
+
+  const handleGenerateDOCX = () => {
+    if (!isValid) return;
+
+    generateDOCX.mutate({
       kanzlei_id: selectedKanzlei,
       kunde_id: selectedKunde,
       bankkonto_id: selectedBankkonto,
@@ -278,14 +292,31 @@ export const RechnungGeneratorDialog = ({ open, onOpenChange }: RechnungGenerato
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)}
-            disabled={generatePDF.isPending}
+            disabled={generatePDF.isPending || generateDOCX.isPending}
           >
             Abbrechen
           </Button>
           <Button 
+            variant="secondary" 
+            onClick={handleGenerateDOCX}
+            disabled={!isValid || generatePDF.isPending || generateDOCX.isPending}
+          >
+            {generateDOCX.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generiere DOCX...
+              </>
+            ) : (
+              <>
+                <FileType className="w-4 h-4 mr-2" />
+                DOCX generieren
+              </>
+            )}
+          </Button>
+          <Button 
             variant="gaming" 
-            onClick={handleGenerate}
-            disabled={!isValid || generatePDF.isPending}
+            onClick={handleGeneratePDF}
+            disabled={!isValid || generatePDF.isPending || generateDOCX.isPending}
           >
             {generatePDF.isPending ? (
               <>

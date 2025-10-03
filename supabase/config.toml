@@ -2,3 +2,6 @@ project_id = "rjjkbnglizodcsjtqicq"
 
 [functions.generate-rechnung-pdf]
 verify_jwt = true
+
+[functions.generate-rechnung-docx]
+verify_jwt = true

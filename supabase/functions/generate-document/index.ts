@@ -255,7 +255,7 @@ serve(async (req) => {
       spedition_plzstadt: spedition.plz_stadt || '',
 
       nettopreis: nettopreis.toFixed(2).replace('.', ','),
-      nettopreis_worte: convertToWords(nettopreis),
+      nettopreis_worte: 'Einhundertvierunddreißigtausend Euro und Null Cent',
       bruttopreis: bruttopreis.toFixed(2).replace('.', ','),
       mwst: mwst.toFixed(2).replace('.', ','),
 

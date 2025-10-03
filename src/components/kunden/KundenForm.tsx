@@ -2,9 +2,10 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Kunde, KundeInput, useCreateKunde, useUpdateKunde } from '@/hooks/useKunden';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const kundeSchema = z.object({
   name: z.string().min(1, 'Unternehmensname ist erforderlich'),
@@ -42,9 +44,12 @@ interface KundenFormProps {
 export function KundenForm({ open, onOpenChange, kunde }: KundenFormProps) {
   const createKunde = useCreateKunde();
   const updateKunde = useUpdateKunde();
+  const { toast } = useToast();
   
   const isEditing = !!kunde;
   const isLoading = createKunde.isPending || updateKunde.isPending;
+
+  const [quickAddText, setQuickAddText] = useState('');
 
   const form = useForm<KundeInput>({
     resolver: zodResolver(kundeSchema),
@@ -77,8 +82,57 @@ export function KundenForm({ open, onOpenChange, kunde }: KundenFormProps) {
         stadt: '',
         geschaeftsfuehrer: '',
       });
+      setQuickAddText('');
     }
   }, [open, kunde, form]);
+
+  const parseQuickAddText = (text: string) => {
+    const lines = text.trim().split('\n').map(line => line.trim()).filter(line => line);
+    
+    if (lines.length < 4) {
+      toast({
+        title: 'Fehler',
+        description: 'Bitte geben Sie alle 4 Zeilen ein (Name, Adresse, PLZ Stadt, Geschäftsführer)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const name = lines[0];
+    const adresse = lines[1];
+    const plzStadtLine = lines[2];
+    const geschaeftsfuehrer = lines[3];
+
+    // PLZ und Stadt trennen (z.B. "70629 Stuttgart-Flughafen")
+    const plzStadtMatch = plzStadtLine.match(/^(\d{5})\s+(.+)$/);
+    
+    if (!plzStadtMatch) {
+      toast({
+        title: 'Fehler',
+        description: 'PLZ-Stadt Format ungültig. Bitte Format "12345 Stadt" verwenden.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const plz = plzStadtMatch[1];
+    const stadt = plzStadtMatch[2];
+
+    // Formular befüllen
+    form.setValue('name', name);
+    form.setValue('adresse', adresse);
+    form.setValue('plz', plz);
+    form.setValue('stadt', stadt);
+    form.setValue('geschaeftsfuehrer', geschaeftsfuehrer);
+
+    // Quick Add Text leeren
+    setQuickAddText('');
+
+    toast({
+      title: 'Erfolg',
+      description: 'Daten wurden übernommen!',
+    });
+  };
 
   const onSubmit = async (data: KundeInput) => {
     try {
@@ -110,6 +164,37 @@ export function KundenForm({ open, onOpenChange, kunde }: KundenFormProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Quick Add Section */}
+            {!isEditing && (
+              <div className="space-y-3 pb-4 border-b border-primary/20">
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <h3 className="text-sm font-semibold text-gradient-primary">
+                    Quick Add - Alle Daten auf einmal einfügen
+                  </h3>
+                </div>
+                
+                <Textarea
+                  value={quickAddText}
+                  onChange={(e) => setQuickAddText(e.target.value)}
+                  placeholder={`Unternehmensname\nAdresse & Hausnummer\nPLZ Stadt\nGeschäftsführer\n\nBeispiel:\nHuT Handling und Transport GmbH\nLuftfrachtzentrum 605/5\n70629 Stuttgart-Flughafen\nSebastian Kossack`}
+                  className="min-h-[120px] font-mono text-sm"
+                />
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => parseQuickAddText(quickAddText)}
+                  disabled={!quickAddText.trim()}
+                  className="w-full"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Daten übernehmen
+                </Button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}

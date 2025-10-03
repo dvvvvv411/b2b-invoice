@@ -187,7 +187,7 @@ serve(async (req) => {
     formData.append('outputName', 'kaufvertrag.pdf');
     formData.append('data', JSON.stringify(jsonData));
 
-    const docmosisResponse = await fetch('https://eu2.dws4.docmosis.com/api/render', {
+    const docmosisResponse = await fetch('https://eu1.dws4.docmosis.com/api/render', {
       method: 'POST',
       body: formData,
     });

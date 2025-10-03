@@ -14,7 +14,33 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      return new Response(
+        JSON.stringify({ error: 'No authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Extract user ID from JWT token
+    let userId: string;
+    try {
+      const token = authHeader.replace('Bearer ', '');
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid token format');
+      }
+      
+      const payload = JSON.parse(atob(parts[1]));
+      userId = payload.sub;
+      
+      if (!userId) {
+        throw new Error('No user ID in token');
+      }
+    } catch (tokenError) {
+      console.error('Token parsing error:', tokenError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authorization token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -22,9 +48,6 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
 
     const { 
       kanzlei_id,
@@ -37,14 +60,14 @@ serve(async (req) => {
 
     console.log('Generating Kaufvertrag DOCX with:', { kanzlei_id, kunde_id, bankkonto_id, insolvente_unternehmen_id, spedition_id, auto_id });
 
-    // Fetch all required data
+    // Fetch all required data with user_id filter for RLS
     const [kanzleiResult, kundeResult, bankkontoResult, insoResult, speditionResult, autoResult] = await Promise.all([
-      supabase.from('anwaltskanzleien').select('*').eq('id', kanzlei_id).single(),
-      supabase.from('kunden').select('*').eq('id', kunde_id).single(),
-      supabase.from('bankkonten').select('*').eq('id', bankkonto_id).single(),
-      supabase.from('insolvente_unternehmen').select('*').eq('id', insolvente_unternehmen_id).single(),
-      supabase.from('speditionen').select('*').eq('id', spedition_id).single(),
-      supabase.from('autos').select('*').eq('id', auto_id).single()
+      supabase.from('anwaltskanzleien').select('*').eq('id', kanzlei_id).eq('user_id', userId).single(),
+      supabase.from('kunden').select('*').eq('id', kunde_id).eq('user_id', userId).single(),
+      supabase.from('bankkonten').select('*').eq('id', bankkonto_id).eq('user_id', userId).single(),
+      supabase.from('insolvente_unternehmen').select('*').eq('id', insolvente_unternehmen_id).eq('user_id', userId).single(),
+      supabase.from('speditionen').select('*').eq('id', spedition_id).eq('user_id', userId).single(),
+      supabase.from('autos').select('*').eq('id', auto_id).eq('user_id', userId).single()
     ]);
 
     if (kanzleiResult.error) throw kanzleiResult.error;

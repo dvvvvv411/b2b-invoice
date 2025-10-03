@@ -1,8 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Docxtemplater from "https://esm.sh/docxtemplater@3.45.0";
-import PizZip from "https://esm.sh/pizzip@3.1.6";
+import Docxtemplater from "https://esm.sh/docxtemplater@4.0.3";
+import PizZip from "https://esm.sh/pizzip@3.1.7";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -278,11 +278,20 @@ serve(async (req) => {
       linebreaks: true,
     });
 
-    doc.render(templateData);
+    try {
+      doc.render(templateData);
+    } catch (error) {
+      console.error('Docxtemplater render error:', error);
+      if (error.properties && error.properties.errors) {
+        console.error('Template errors:', error.properties.errors);
+      }
+      throw error;
+    }
 
     const output = doc.getZip().generate({
       type: "uint8array",
       mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      compression: "DEFLATE",
     });
 
     console.log('Document generated successfully');

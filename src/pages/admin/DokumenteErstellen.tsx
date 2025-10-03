@@ -436,6 +436,27 @@ const DokumenteErstellen = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Debug Card - JSON Data */}
+          {documentType === 'kaufvertrag' && generateKaufvertragPDFMutation.lastRequestData && (
+            <Card className="glass border-yellow-500/30">
+              <CardHeader>
+                <CardTitle className="text-yellow-500 flex items-center gap-2">
+                  🔍 Debug: JSON an Docmosis API
+                </CardTitle>
+                <CardDescription>
+                  Diese Daten wurden an die Edge Function gesendet
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[400px]">
+                  <pre className="text-xs bg-black/50 p-4 rounded text-green-400 font-mono">
+                    {JSON.stringify(generateKaufvertragPDFMutation.lastRequestData, null, 2)}
+                  </pre>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

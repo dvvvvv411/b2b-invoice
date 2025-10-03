@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 export interface GenerateKaufvertragInput {
   kanzlei_id: string;
@@ -13,8 +14,13 @@ export interface GenerateKaufvertragInput {
 
 export const useGenerateKaufvertragPDF = () => {
   const { toast } = useToast();
+  const [lastRequestData, setLastRequestData] = useState<GenerateKaufvertragInput | null>(null);
 
-  return useMutation({
+  const mutation = useMutation({
+    onMutate: (input) => {
+      setLastRequestData(input);
+      return input;
+    },
     mutationFn: async (input: GenerateKaufvertragInput) => {
       const { data, error } = await supabase.functions.invoke('generate-kaufvertrag-pdf', {
         body: input,
@@ -49,4 +55,9 @@ export const useGenerateKaufvertragPDF = () => {
       });
     },
   });
+
+  return {
+    ...mutation,
+    lastRequestData,
+  };
 };

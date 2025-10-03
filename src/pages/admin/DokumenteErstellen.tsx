@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileText, FileType, Download, Car } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,12 +51,6 @@ const DokumenteErstellen = () => {
   const generateKaufvertragDOCXMutation = useGenerateKaufvertragDOCX();
   const generateKaufvertragJSONMutation = useGenerateKaufvertragJSON();
 
-  // Calculate totals for Rechnung
-  const selectedAutos = autos.filter(auto => autoIds.includes(auto.id));
-  const nettopreis = selectedAutos.reduce((sum, auto) => sum + (auto.einzelpreis_netto || 0), 0);
-  const mwst = nettopreis * 0.19;
-  const bruttopreis = nettopreis + mwst;
-
   // Helper functions
   const getTemplateName = (docType: DocumentType): string => {
     const templateMap: Record<DocumentType, string> = {
@@ -72,6 +66,35 @@ const DokumenteErstellen = () => {
   const isKaufvertrag = documentType.startsWith('kaufvertrag-');
   const isSingleVehicleKaufvertrag = documentType.includes('-1-');
   const isMultipleVehicleKaufvertrag = documentType.includes('-m-');
+
+  // Auto-select defaults when data loads
+  useEffect(() => {
+    // Auto-select default Kanzlei
+    const defaultKanzlei = kanzleien.find(k => k.is_default);
+    if (defaultKanzlei && !kanzlei) {
+      setKanzlei(defaultKanzlei.id);
+    }
+
+    // Auto-select default Insolventes Unternehmen
+    const defaultInsolventes = insolventeUnternehmen.find(u => u.is_default);
+    if (defaultInsolventes && !insolventesUnternehmen) {
+      setInsolventesUnternehmen(defaultInsolventes.id);
+    }
+
+    // Auto-select default Spedition (only for Kaufverträge)
+    if (isKaufvertrag) {
+      const defaultSpedition = speditionen.find(s => s.is_default);
+      if (defaultSpedition && !spedition) {
+        setSpedition(defaultSpedition.id);
+      }
+    }
+  }, [kanzleien, insolventeUnternehmen, speditionen, isKaufvertrag, kanzlei, insolventesUnternehmen, spedition]);
+
+  // Calculate totals for Rechnung
+  const selectedAutos = autos.filter(auto => autoIds.includes(auto.id));
+  const nettopreis = selectedAutos.reduce((sum, auto) => sum + (auto.einzelpreis_netto || 0), 0);
+  const mwst = nettopreis * 0.19;
+  const bruttopreis = nettopreis + mwst;
 
   // Calculate totals for Kaufvertrag single vehicle
   const selectedAuto = autos.find(auto => auto.id === selectedAutoId);
@@ -237,7 +260,7 @@ const DokumenteErstellen = () => {
                     <SelectContent>
                       {kanzleien.map((k) => (
                         <SelectItem key={k.id} value={k.id}>
-                          {k.name}
+                          {k.name} {k.is_default && '⭐'}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -288,7 +311,7 @@ const DokumenteErstellen = () => {
                     <SelectContent>
                       {insolventeUnternehmen.map((u) => (
                         <SelectItem key={u.id} value={u.id}>
-                          {u.name}
+                          {u.name} {u.is_default && '⭐'}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -306,7 +329,7 @@ const DokumenteErstellen = () => {
                       <SelectContent>
                         {speditionen.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
-                            {s.name}
+                            {s.name} {s.is_default && '⭐'}
                           </SelectItem>
                         ))}
                       </SelectContent>

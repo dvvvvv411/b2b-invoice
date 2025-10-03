@@ -7,6 +7,7 @@ export interface Spedition {
   name: string;
   strasse: string;
   plz_stadt: string;
+  is_default: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -15,6 +16,7 @@ export interface SpeditionInput {
   name: string;
   strasse: string;
   plz_stadt: string;
+  is_default?: boolean;
 }
 
 export const useSpeditionen = () => {
@@ -128,6 +130,43 @@ export const useDeleteSpedition = () => {
       toast({
         title: 'Fehler',
         description: error.message || 'Fehler beim Löschen der Spedition.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useSetDefaultSpedition = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('speditionen')
+        .update({ is_default: true })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['speditionen'] });
+      toast({
+        title: 'Erfolg',
+        description: 'Standard-Spedition wurde gesetzt.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Fehler',
+        description: error.message || 'Fehler beim Setzen der Standard-Spedition.',
         variant: 'destructive',
       });
     },

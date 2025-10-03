@@ -12,8 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Spedition, useDeleteSpedition } from '@/hooks/useSpeditionen';
-import { Search, Edit, Trash2 } from 'lucide-react';
+import { Spedition, useDeleteSpedition, useSetDefaultSpedition } from '@/hooks/useSpeditionen';
+import { Search, Edit, Trash2, Star } from 'lucide-react';
 
 interface SpeditionenTableProps {
   speditionen: Spedition[];
@@ -32,6 +32,7 @@ export function SpeditionenTable({
 }: SpeditionenTableProps) {
   const [deleteSpeditionId, setDeleteSpeditionId] = useState<string | null>(null);
   const deleteSpedition = useDeleteSpedition();
+  const setDefault = useSetDefaultSpedition();
 
   const filteredSpeditionen = speditionen.filter(spedition =>
     spedition.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -92,6 +93,7 @@ export function SpeditionenTable({
                   <th className="text-left py-3 px-4 font-medium text-foreground">Name</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">Adresse</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">PLZ & Stadt</th>
+                  <th className="text-left py-3 px-4 font-medium text-foreground">Standard</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">Aktionen</th>
                 </tr>
               </thead>
@@ -109,6 +111,17 @@ export function SpeditionenTable({
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">
                       {spedition.plz_stadt}
+                    </td>
+                    <td className="py-3 px-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDefault.mutate(spedition.id)}
+                        className={spedition.is_default ? 'text-yellow-500' : 'text-muted-foreground'}
+                        title={spedition.is_default ? 'Ist Standard' : 'Als Standard setzen'}
+                      >
+                        <Star className={`w-4 h-4 ${spedition.is_default ? 'fill-yellow-500' : ''}`} />
+                      </Button>
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-2">

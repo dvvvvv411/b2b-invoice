@@ -20,6 +20,7 @@ export type Database = {
           email: string | null
           fax: string | null
           id: string
+          is_default: boolean | null
           logo_url: string | null
           name: string
           plz: string | null
@@ -39,6 +40,7 @@ export type Database = {
           email?: string | null
           fax?: string | null
           id?: string
+          is_default?: boolean | null
           logo_url?: string | null
           name: string
           plz?: string | null
@@ -58,6 +60,7 @@ export type Database = {
           email?: string | null
           fax?: string | null
           id?: string
+          is_default?: boolean | null
           logo_url?: string | null
           name?: string
           plz?: string | null
@@ -193,6 +196,7 @@ export type Database = {
           created_at: string
           handelsregister: string | null
           id: string
+          is_default: boolean | null
           name: string
           updated_at: string
           user_id: string
@@ -204,6 +208,7 @@ export type Database = {
           created_at?: string
           handelsregister?: string | null
           id?: string
+          is_default?: boolean | null
           name: string
           updated_at?: string
           user_id: string
@@ -215,6 +220,7 @@ export type Database = {
           created_at?: string
           handelsregister?: string | null
           id?: string
+          is_default?: boolean | null
           name?: string
           updated_at?: string
           user_id?: string
@@ -324,6 +330,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_default: boolean | null
           name: string
           plz_stadt: string | null
           strasse: string | null
@@ -333,6 +340,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_default?: boolean | null
           name: string
           plz_stadt?: string | null
           strasse?: string | null
@@ -342,6 +350,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_default?: boolean | null
           name?: string
           plz_stadt?: string | null
           strasse?: string | null

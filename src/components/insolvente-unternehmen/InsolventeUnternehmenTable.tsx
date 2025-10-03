@@ -12,8 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { InsolventesUnternehmen, useDeleteInsolventesUnternehmen } from '@/hooks/useInsolventeUnternehmen';
-import { Search, Edit, Trash2 } from 'lucide-react';
+import { InsolventesUnternehmen, useDeleteInsolventesUnternehmen, useSetDefaultInsolventesUnternehmen } from '@/hooks/useInsolventeUnternehmen';
+import { Search, Edit, Trash2, Star } from 'lucide-react';
 
 interface InsolventeUnternehmenTableProps {
   unternehmen: InsolventesUnternehmen[];
@@ -32,6 +32,7 @@ export function InsolventeUnternehmenTable({
 }: InsolventeUnternehmenTableProps) {
   const [deleteUnternehmenId, setDeleteUnternehmenId] = useState<string | null>(null);
   const deleteUnternehmen = useDeleteInsolventesUnternehmen();
+  const setDefault = useSetDefaultInsolventesUnternehmen();
 
   const filteredUnternehmen = unternehmen.filter(company =>
     company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,6 +96,7 @@ export function InsolventeUnternehmenTable({
                   <th className="text-left py-3 px-4 font-medium text-foreground">Amtsgericht</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">Aktenzeichen</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">Handelsregister</th>
+                  <th className="text-left py-3 px-4 font-medium text-foreground">Standard</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">Aktionen</th>
                 </tr>
               </thead>
@@ -120,6 +122,17 @@ export function InsolventeUnternehmenTable({
                     </td>
                     <td className="py-3 px-4 text-muted-foreground text-sm">
                       {company.handelsregister || '-'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDefault.mutate(company.id)}
+                        className={company.is_default ? 'text-yellow-500' : 'text-muted-foreground'}
+                        title={company.is_default ? 'Ist Standard' : 'Als Standard setzen'}
+                      >
+                        <Star className={`w-4 h-4 ${company.is_default ? 'fill-yellow-500' : ''}`} />
+                      </Button>
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-2">

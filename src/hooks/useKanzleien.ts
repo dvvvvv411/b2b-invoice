@@ -17,6 +17,7 @@ export interface Kanzlei {
   register_nr: string | null;
   ust_id: string | null;
   logo_url: string | null;
+  is_default: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +36,7 @@ export interface KanzleiInput {
   register_nr: string | null;
   ust_id: string | null;
   logo_url: string | null;
+  is_default?: boolean;
 }
 
 export const useKanzleien = () => {
@@ -218,6 +220,43 @@ export const useUploadLogo = () => {
       toast({
         title: 'Upload Fehler',
         description: error.message || 'Fehler beim Hochladen des Logos.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useSetDefaultKanzlei = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('anwaltskanzleien')
+        .update({ is_default: true })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kanzleien'] });
+      toast({
+        title: 'Erfolg',
+        description: 'Standard-Kanzlei wurde gesetzt.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Fehler',
+        description: error.message || 'Fehler beim Setzen der Standard-Kanzlei.',
         variant: 'destructive',
       });
     },

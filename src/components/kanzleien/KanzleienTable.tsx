@@ -12,8 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Kanzlei, useDeleteKanzlei } from '@/hooks/useKanzleien';
-import { Search, Edit, Trash2, Building2, Phone, Mail, Globe } from 'lucide-react';
+import { Kanzlei, useDeleteKanzlei, useSetDefaultKanzlei } from '@/hooks/useKanzleien';
+import { Search, Edit, Trash2, Building2, Phone, Mail, Globe, Star } from 'lucide-react';
 
 interface KanzleienTableProps {
   kanzleien: Kanzlei[];
@@ -32,6 +32,7 @@ export function KanzleienTable({
 }: KanzleienTableProps) {
   const [deleteKanzleiId, setDeleteKanzleiId] = useState<string | null>(null);
   const deleteKanzlei = useDeleteKanzlei();
+  const setDefault = useSetDefaultKanzlei();
 
   const filteredKanzleien = kanzleien.filter(kanzlei =>
     kanzlei.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -180,6 +181,7 @@ export function KanzleienTable({
                     <th className="text-left py-3 px-4 font-medium text-foreground">Rechtsanwalt</th>
                     <th className="text-left py-3 px-4 font-medium text-foreground">Telefon</th>
                     <th className="text-left py-3 px-4 font-medium text-foreground">E-Mail</th>
+                    <th className="text-left py-3 px-4 font-medium text-foreground">Standard</th>
                     <th className="text-left py-3 px-4 font-medium text-foreground">Aktionen</th>
                   </tr>
                 </thead>
@@ -225,6 +227,17 @@ export function KanzleienTable({
                         ) : (
                           '-'
                         )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDefault.mutate(kanzlei.id)}
+                          className={kanzlei.is_default ? 'text-yellow-500' : 'text-muted-foreground'}
+                          title={kanzlei.is_default ? 'Ist Standard' : 'Als Standard setzen'}
+                        >
+                          <Star className={`w-4 h-4 ${kanzlei.is_default ? 'fill-yellow-500' : ''}`} />
+                        </Button>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center space-x-2">

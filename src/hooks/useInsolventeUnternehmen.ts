@@ -9,6 +9,7 @@ export interface InsolventesUnternehmen {
   aktenzeichen: string;
   handelsregister: string;
   adresse: string;
+  is_default: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -19,6 +20,7 @@ export interface InsolventesUnternehmenInput {
   aktenzeichen: string;
   handelsregister: string;
   adresse: string;
+  is_default?: boolean;
 }
 
 export const useInsolventeUnternehmen = () => {
@@ -132,6 +134,43 @@ export const useDeleteInsolventesUnternehmen = () => {
       toast({
         title: 'Fehler',
         description: error.message || 'Fehler beim Löschen des insolventen Unternehmens.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useSetDefaultInsolventesUnternehmen = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('insolvente_unternehmen')
+        .update({ is_default: true })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['insolvente_unternehmen'] });
+      toast({
+        title: 'Erfolg',
+        description: 'Standard-Eintrag wurde gesetzt.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Fehler',
+        description: error.message || 'Fehler beim Setzen des Standards.',
         variant: 'destructive',
       });
     },

@@ -36,6 +36,7 @@ export function BankkontenTable({
   const filteredBankkonten = bankkonten.filter(bankkonto =>
     bankkonto.kontoname.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bankkonto.kontoinhaber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (bankkonto.bankname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     bankkonto.iban.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bankkonto.bic.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -96,6 +97,7 @@ export function BankkontenTable({
                 <tr className="border-b border-border/30">
                   <th className="text-left py-3 px-4 font-medium text-foreground">Kontoname</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">Kontoinhaber</th>
+                  <th className="text-left py-3 px-4 font-medium text-foreground">Bank</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">IBAN</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">BIC</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">Aktionen</th>
@@ -112,6 +114,9 @@ export function BankkontenTable({
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">
                       {bankkonto.kontoinhaber}
+                    </td>
+                    <td className="py-3 px-4 text-muted-foreground">
+                      {bankkonto.bankname || '-'}
                     </td>
                     <td className="py-3 px-4 text-muted-foreground font-mono text-sm">
                       {formatIban(bankkonto.iban)}

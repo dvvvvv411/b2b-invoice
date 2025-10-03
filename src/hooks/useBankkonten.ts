@@ -8,6 +8,7 @@ export interface Bankkonto {
   kontoinhaber: string;
   iban: string;
   bic: string;
+  bankname: string;
   created_at: string;
   updated_at: string;
 }
@@ -17,6 +18,7 @@ export interface BankkontoInput {
   kontoinhaber: string;
   iban: string;
   bic: string;
+  bankname: string;
 }
 
 export const useBankkonten = () => {

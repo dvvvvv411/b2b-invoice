@@ -25,6 +25,7 @@ import { Loader2 } from 'lucide-react';
 const bankkontoSchema = z.object({
   kontoname: z.string().min(1, 'Kontoname ist erforderlich'),
   kontoinhaber: z.string().min(1, 'Kontoinhaber ist erforderlich'),
+  bankname: z.string().min(1, 'Bankname ist erforderlich'),
   iban: z.string()
     .min(22, 'IBAN muss mindestens 22 Zeichen haben')
     .max(34, 'IBAN darf maximal 34 Zeichen haben')
@@ -53,6 +54,7 @@ export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenForm
     defaultValues: {
       kontoname: '',
       kontoinhaber: '',
+      bankname: '',
       iban: '',
       bic: '',
     },
@@ -65,6 +67,7 @@ export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenForm
       form.reset({
         kontoname: bankkonto.kontoname || '',
         kontoinhaber: bankkonto.kontoinhaber || '',
+        bankname: bankkonto.bankname || '',
         iban: bankkonto.iban || '',
         bic: bankkonto.bic || '',
       });
@@ -73,6 +76,7 @@ export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenForm
       form.reset({
         kontoname: '',
         kontoinhaber: '',
+        bankname: '',
         iban: '',
         bic: '',
       });
@@ -132,6 +136,20 @@ export function BankkontenForm({ open, onOpenChange, bankkonto }: BankkontenForm
                     <FormLabel>Kontoinhaber *</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Muster GmbH" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="bankname"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Bankname *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Sparkasse" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

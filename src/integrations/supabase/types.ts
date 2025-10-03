@@ -118,6 +118,7 @@ export type Database = {
       }
       bankkonten: {
         Row: {
+          bankname: string | null
           bic: string | null
           created_at: string
           iban: string | null
@@ -128,6 +129,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bankname?: string | null
           bic?: string | null
           created_at?: string
           iban?: string | null
@@ -138,6 +140,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bankname?: string | null
           bic?: string | null
           created_at?: string
           iban?: string | null

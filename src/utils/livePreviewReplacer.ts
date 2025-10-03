@@ -98,8 +98,6 @@ export const replacePlaceholdersWithRealData = (htmlContent: string, selectedDat
     processedHtml = processedHtml.replace(/\{\{KUNDE_PLZ\}\}/g, selectedData.kunde.plz || '');
     processedHtml = processedHtml.replace(/\{\{KUNDE_STADT\}\}/g, selectedData.kunde.stadt || '');
     processedHtml = processedHtml.replace(/\{\{KUNDE_GESCHAEFTSFUEHRER\}\}/g, selectedData.kunde.geschaeftsfuehrer || '');
-    processedHtml = processedHtml.replace(/\{\{AKTENZEICHEN\}\}/g, selectedData.kunde.aktenzeichen || '');
-    processedHtml = processedHtml.replace(/\{\{KUNDENNUMMER\}\}/g, selectedData.kunde.kundennummer || '');
   }
   
   // AUTO DATEN

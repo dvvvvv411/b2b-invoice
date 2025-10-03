@@ -108,9 +108,7 @@ const Kunden = () => {
                   {searchTerm ? kunden.filter(k =>
                     k.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     k.stadt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    k.geschaeftsfuehrer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    k.aktenzeichen.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    k.kundennummer.toLowerCase().includes(searchTerm.toLowerCase())
+                    k.geschaeftsfuehrer.toLowerCase().includes(searchTerm.toLowerCase())
                   ).length : kunden.length}
                 </p>
               </div>

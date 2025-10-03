@@ -31,12 +31,6 @@ const kundeSchema = z.object({
     .regex(/^\d+$/, 'PLZ darf nur Zahlen enthalten'),
   stadt: z.string().min(1, 'Stadt ist erforderlich'),
   geschaeftsfuehrer: z.string().min(1, 'Geschäftsführer ist erforderlich'),
-  aktenzeichen: z.string()
-    .min(1, 'Aktenzeichen ist erforderlich')
-    .regex(/^AZ\/\d{4}\/\w+$/, 'Format: AZ/0305/XXX'),
-  kundennummer: z.string()
-    .min(1, 'Kundennummer ist erforderlich')
-    .regex(/^\w+\/\d{4}\/IN$/, 'Format: XXX/0745/IN'),
 });
 
 interface KundenFormProps {
@@ -60,8 +54,6 @@ export function KundenForm({ open, onOpenChange, kunde }: KundenFormProps) {
       plz: '',
       stadt: '',
       geschaeftsfuehrer: '',
-      aktenzeichen: '',
-      kundennummer: '',
     },
   });
 
@@ -75,8 +67,6 @@ export function KundenForm({ open, onOpenChange, kunde }: KundenFormProps) {
         plz: kunde.plz || '',
         stadt: kunde.stadt || '',
         geschaeftsfuehrer: kunde.geschaeftsfuehrer || '',
-        aktenzeichen: kunde.aktenzeichen || '',
-        kundennummer: kunde.kundennummer || '',
       });
     } else if (open && !kunde) {
       // Creating new kunde - reset to empty values
@@ -86,8 +76,6 @@ export function KundenForm({ open, onOpenChange, kunde }: KundenFormProps) {
         plz: '',
         stadt: '',
         geschaeftsfuehrer: '',
-        aktenzeichen: '',
-        kundennummer: '',
       });
     }
   }, [open, kunde, form]);
@@ -187,34 +175,6 @@ export function KundenForm({ open, onOpenChange, kunde }: KundenFormProps) {
                     <FormLabel>Geschäftsführer *</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Max Mustermann" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="aktenzeichen"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Aktenzeichen *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="AZ/0305/001" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="kundennummer"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Kundennummer *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="MUE/0745/IN" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

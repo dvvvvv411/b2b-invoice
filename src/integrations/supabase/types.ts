@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -188,11 +188,9 @@ export type Database = {
       kunden: {
         Row: {
           adresse: string | null
-          aktenzeichen: string | null
           created_at: string
           geschaeftsfuehrer: string | null
           id: string
-          kundennummer: string | null
           name: string
           plz: string | null
           stadt: string | null
@@ -201,11 +199,9 @@ export type Database = {
         }
         Insert: {
           adresse?: string | null
-          aktenzeichen?: string | null
           created_at?: string
           geschaeftsfuehrer?: string | null
           id?: string
-          kundennummer?: string | null
           name: string
           plz?: string | null
           stadt?: string | null
@@ -214,11 +210,9 @@ export type Database = {
         }
         Update: {
           adresse?: string | null
-          aktenzeichen?: string | null
           created_at?: string
           geschaeftsfuehrer?: string | null
           id?: string
-          kundennummer?: string | null
           name?: string
           plz?: string | null
           stadt?: string | null
@@ -230,6 +224,7 @@ export type Database = {
       pdf_templates: {
         Row: {
           created_at: string | null
+          footer_html: string | null
           html_content: string
           id: string
           is_active: boolean | null
@@ -241,6 +236,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          footer_html?: string | null
           html_content: string
           id?: string
           is_active?: boolean | null
@@ -252,6 +248,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          footer_html?: string | null
           html_content?: string
           id?: string
           is_active?: boolean | null

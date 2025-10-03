@@ -36,9 +36,7 @@ export function KundenTable({
   const filteredKunden = kunden.filter(kunde =>
     kunde.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     kunde.stadt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    kunde.geschaeftsfuehrer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    kunde.aktenzeichen.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    kunde.kundennummer.toLowerCase().includes(searchTerm.toLowerCase())
+    kunde.geschaeftsfuehrer.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDelete = async () => {
@@ -95,8 +93,6 @@ export function KundenTable({
                   <th className="text-left py-3 px-4 font-medium text-foreground">Adresse</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">Stadt</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">Geschäftsführer</th>
-                  <th className="text-left py-3 px-4 font-medium text-foreground">Aktenzeichen</th>
-                  <th className="text-left py-3 px-4 font-medium text-foreground">Kundennummer</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">Aktionen</th>
                 </tr>
               </thead>
@@ -117,12 +113,6 @@ export function KundenTable({
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">
                       {kunde.geschaeftsfuehrer}
-                    </td>
-                    <td className="py-3 px-4 text-muted-foreground font-mono text-sm">
-                      {kunde.aktenzeichen}
-                    </td>
-                    <td className="py-3 px-4 text-muted-foreground font-mono text-sm">
-                      {kunde.kundennummer}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-2">

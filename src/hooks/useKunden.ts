@@ -9,8 +9,6 @@ export interface Kunde {
   plz: string;
   stadt: string;
   geschaeftsfuehrer: string;
-  aktenzeichen: string;
-  kundennummer: string;
   created_at: string;
   updated_at: string;
 }
@@ -21,8 +19,6 @@ export interface KundeInput {
   plz: string;
   stadt: string;
   geschaeftsfuehrer: string;
-  aktenzeichen: string;
-  kundennummer: string;
 }
 
 export const useKunden = () => {

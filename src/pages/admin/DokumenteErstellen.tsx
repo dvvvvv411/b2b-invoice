@@ -481,152 +481,141 @@ const DokumenteErstellen = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               
-              {/* Single DEKRA Input Row */}
-              <div className="flex gap-3 items-start">
-                <div className="flex gap-2 items-center">
-                  <Input
-                    placeholder="0993"
-                    value={dekraInput}
-                    onChange={(e) => setDekraInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddByDekra();
-                      }
-                    }}
-                    maxLength={5}
-                    className="font-mono text-2xl font-bold w-32 h-16 text-center"
-                  />
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    onClick={handleAddByDekra}
-                    disabled={!dekraInput.trim()}
-                  >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Hinzufügen
-                  </Button>
-                </div>
-
-                {/* Selected Vehicles Badges */}
-                {((isSingleVehicleKaufvertrag && selectedAutoId) || 
-                  (!isSingleVehicleKaufvertrag && autoIds.length > 0)) && (
-                  <div className="flex-1 flex flex-wrap gap-2 items-center max-h-32 overflow-y-auto p-2 bg-primary/5 rounded-lg border border-primary/20">
-                    {isSingleVehicleKaufvertrag ? (
-                      selectedAuto && (
-                        <Badge variant="secondary" className="text-sm px-3 py-2 gap-2">
-                          <span>{selectedAuto.marke} {selectedAuto.modell}</span>
-                          <span className="text-xs text-muted-foreground">({selectedAuto.dekra_bericht_nr})</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 p-0 hover:bg-destructive/20"
-                            onClick={() => handleRemoveAuto(selectedAuto.id)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      )
-                    ) : (
-                      <>
-                        {selectedAutos.map((auto) => (
-                          <Badge key={auto.id} variant="secondary" className="text-sm px-3 py-2 gap-2">
-                            <span>{auto.marke} {auto.modell}</span>
-                            <span className="text-xs text-muted-foreground">({auto.dekra_bericht_nr})</span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0 hover:bg-destructive/20"
-                              onClick={() => handleRemoveAuto(auto.id)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </Badge>
-                        ))}
-                        {autoIds.length > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setAutoIds([])}
-                            className="h-8 text-xs"
-                          >
-                            Alle entfernen
-                          </Button>
-                        )}
-                      </>
-                    )}
+              <div className="flex gap-4">
+                {/* Links: Input-Bereiche untereinander */}
+                <div className="space-y-3">
+                  {/* Single DEKRA Input */}
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      placeholder="0993"
+                      value={dekraInput}
+                      onChange={(e) => setDekraInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddByDekra();
+                        }
+                      }}
+                      maxLength={5}
+                      className="font-mono text-2xl font-bold w-32 h-16 text-center"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      onClick={handleAddByDekra}
+                      disabled={!dekraInput.trim()}
+                    >
+                      <Plus className="w-5 h-5 mr-2" />
+                      Hinzufügen
+                    </Button>
                   </div>
-                )}
-              </div>
 
-              {/* Bulk DEKRA Textarea Row */}
-              <div className="flex gap-3 items-start">
-                <div className="flex gap-2 items-start">
-                  <Textarea
-                    placeholder="0993&#10;0212&#10;1135&#10;2519"
-                    value={bulkDekraInput}
-                    onChange={(e) => setBulkDekraInput(e.target.value)}
-                    className="font-mono text-2xl font-bold w-32 h-40 text-center resize-none"
-                  />
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    onClick={handleBulkAddByDekra}
-                    disabled={!bulkDekraInput.trim()}
-                    className="h-40"
-                  >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Hinzufügen
-                  </Button>
+                  {/* Bulk DEKRA Textarea */}
+                  <div className="flex gap-2 items-start">
+                    <Textarea
+                      placeholder="0993&#10;0212&#10;1135&#10;2519"
+                      value={bulkDekraInput}
+                      onChange={(e) => setBulkDekraInput(e.target.value)}
+                      className="font-mono text-2xl font-bold w-32 h-40 text-center resize-none"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      onClick={handleBulkAddByDekra}
+                      disabled={!bulkDekraInput.trim()}
+                      className="h-40"
+                    >
+                      <Plus className="w-5 h-5 mr-2" />
+                      Hinzufügen
+                    </Button>
+                  </div>
                 </div>
 
-                {/* Selected Vehicles Badges (same as above) */}
+                {/* Rechts: Ausgewählte Fahrzeuge Liste */}
                 {((isSingleVehicleKaufvertrag && selectedAutoId) || 
                   (!isSingleVehicleKaufvertrag && autoIds.length > 0)) && (
-                  <div className="flex-1 flex flex-wrap gap-2 items-center max-h-40 overflow-y-auto p-2 bg-primary/5 rounded-lg border border-primary/20">
-                    {isSingleVehicleKaufvertrag ? (
-                      selectedAuto && (
-                        <Badge variant="secondary" className="text-sm px-3 py-2 gap-2">
-                          <span>{selectedAuto.marke} {selectedAuto.modell}</span>
-                          <span className="text-xs text-muted-foreground">({selectedAuto.dekra_bericht_nr})</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 p-0 hover:bg-destructive/20"
-                            onClick={() => handleRemoveAuto(selectedAuto.id)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      )
-                    ) : (
-                      <>
-                        {selectedAutos.map((auto) => (
-                          <Badge key={auto.id} variant="secondary" className="text-sm px-3 py-2 gap-2">
-                            <span>{auto.marke} {auto.modell}</span>
-                            <span className="text-xs text-muted-foreground">({auto.dekra_bericht_nr})</span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0 hover:bg-destructive/20"
-                              onClick={() => handleRemoveAuto(auto.id)}
+                  <div className="flex-1">
+                    <div className="mb-2 flex items-center justify-between">
+                      <Label className="text-sm font-medium">Ausgewählte Fahrzeuge</Label>
+                      {!isSingleVehicleKaufvertrag && autoIds.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setAutoIds([])}
+                          className="h-7 text-xs"
+                        >
+                          Alle entfernen
+                        </Button>
+                      )}
+                    </div>
+                    <ScrollArea className="h-[220px] pr-3">
+                      <div className="space-y-2">
+                        {isSingleVehicleKaufvertrag ? (
+                          selectedAuto && (
+                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-primary/50 bg-primary/5">
+                              <Checkbox checked disabled />
+                              <div className="flex-1 flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium text-foreground">
+                                    {selectedAuto.marke} {selectedAuto.modell}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Fahrgestell-Nr.: {selectedAuto.fahrgestell_nr || 'N/A'}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold text-gradient-secondary">
+                                    {formatPrice(selectedAuto.einzelpreis_netto)}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">Netto</p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleRemoveAuto(selectedAuto.id)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )
+                        ) : (
+                          selectedAutos.map((auto) => (
+                            <div
+                              key={auto.id}
+                              className="flex items-center space-x-3 p-3 rounded-lg border border-primary/50 bg-primary/5"
                             >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </Badge>
-                        ))}
-                        {autoIds.length > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setAutoIds([])}
-                            className="h-8 text-xs"
-                          >
-                            Alle entfernen
-                          </Button>
+                              <Checkbox checked disabled />
+                              <div className="flex-1 flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium text-foreground">
+                                    {auto.marke} {auto.modell}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Fahrgestell-Nr.: {auto.fahrgestell_nr || 'N/A'}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold text-gradient-secondary">
+                                    {formatPrice(auto.einzelpreis_netto)}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">Netto</p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleRemoveAuto(auto.id)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))
                         )}
-                      </>
-                    )}
+                      </div>
+                    </ScrollArea>
                   </div>
                 )}
               </div>

@@ -813,46 +813,46 @@ const DokumenteErstellen = () => {
                   </span>
                  </div>
                  <Separator />
-                 <div className="flex justify-between items-center gap-4">
-                   {/* Links: Rabatt-Eingabe mit Checkbox */}
-                   <div className="flex items-center gap-2">
-                     <Input
-                       type="number"
-                       placeholder="0"
-                       value={discountPercentage}
-                       onChange={(e) => setDiscountPercentage(e.target.value)}
-                       className="w-20 h-10 text-center"
-                       min="0"
-                       max="100"
-                       step="0.1"
-                       disabled={!applyDiscount}
-                     />
-                     <span className="text-sm text-muted-foreground">%</span>
-                     <Checkbox
-                       checked={applyDiscount}
-                       onCheckedChange={(checked) => setApplyDiscount(checked as boolean)}
-                       id="apply-discount"
-                     />
-                     <Label 
-                       htmlFor="apply-discount" 
-                       className="text-sm text-muted-foreground cursor-pointer"
-                     >
-                       Rabatt anwenden
-                     </Label>
-                   </div>
+              <div className="flex justify-between items-center gap-4">
+                {/* Links: Bruttopreis */}
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold">Bruttopreis:</span>
+                  <span className="font-bold text-2xl text-gradient-primary">
+                    {formatPrice(
+                      documentType === 'rechnung' 
+                        ? bruttopreis 
+                        : (isSingleVehicleKaufvertrag ? kaufvertragBruttopreis : kaufvertragMultipleBruttopreis)
+                    )}
+                  </span>
+                </div>
 
-                   {/* Rechts: Bruttopreis */}
-                   <div className="flex items-center gap-2">
-                     <span className="text-lg font-semibold">Bruttopreis:</span>
-                     <span className="font-bold text-2xl text-gradient-primary">
-                       {formatPrice(
-                         documentType === 'rechnung' 
-                           ? bruttopreis 
-                           : (isSingleVehicleKaufvertrag ? kaufvertragBruttopreis : kaufvertragMultipleBruttopreis)
-                       )}
-                     </span>
-                   </div>
-                 </div>
+                {/* Rechts: Rabatt-Eingabe mit Checkbox */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={discountPercentage}
+                    onChange={(e) => setDiscountPercentage(e.target.value)}
+                    className="w-20 h-10 text-center"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    disabled={!applyDiscount}
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                  <Checkbox
+                    checked={applyDiscount}
+                    onCheckedChange={(checked) => setApplyDiscount(checked as boolean)}
+                    id="apply-discount"
+                  />
+                  <Label 
+                    htmlFor="apply-discount" 
+                    className="text-sm text-muted-foreground cursor-pointer"
+                  >
+                    Rabatt anwenden
+                  </Label>
+                </div>
+              </div>
               </CardContent>
             </Card>
           )}

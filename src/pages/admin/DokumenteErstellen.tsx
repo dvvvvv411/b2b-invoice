@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { useKanzleien } from '@/hooks/useKanzleien';
 import { useKunden } from '@/hooks/useKunden';
@@ -480,9 +480,9 @@ const DokumenteErstellen = () => {
                       <PopoverContent className="w-[400px] p-0" align="start">
                         <Command>
                           <CommandInput placeholder="Kunde suchen..." />
-                          <CommandEmpty>Kein Kunde gefunden.</CommandEmpty>
-                          <CommandGroup>
-                            <ScrollArea className="h-[300px]">
+                          <CommandList>
+                            <CommandEmpty>Kein Kunde gefunden.</CommandEmpty>
+                            <CommandGroup>
                               {(kunden || []).map((k) => (
                                 <CommandItem
                                   key={k.id}
@@ -501,8 +501,8 @@ const DokumenteErstellen = () => {
                                   {k.name}
                                 </CommandItem>
                               ))}
-                            </ScrollArea>
-                          </CommandGroup>
+                            </CommandGroup>
+                          </CommandList>
                         </Command>
                       </PopoverContent>
                     </Popover>

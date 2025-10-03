@@ -17,7 +17,7 @@ import { useAutos } from '@/hooks/useAutos';
 import { useSpeditionen } from '@/hooks/useSpeditionen';
 import { useGenerateRechnungPDF } from '@/hooks/useGenerateRechnungPDF';
 import { useGenerateRechnungDOCX } from '@/hooks/useGenerateRechnungDOCX';
-import { useGenerateKaufvertragPDF } from '@/hooks/useGenerateKaufvertragPDF';
+import { useGenerateKaufvertragPDF, useGenerateKaufvertragJSON } from '@/hooks/useGenerateKaufvertragPDF';
 import { useGenerateKaufvertragDOCX } from '@/hooks/useGenerateKaufvertragDOCX';
 import { formatPrice } from '@/lib/formatters';
 
@@ -42,6 +42,7 @@ const DokumenteErstellen = () => {
   const generateRechnungDOCXMutation = useGenerateRechnungDOCX();
   const generateKaufvertragPDFMutation = useGenerateKaufvertragPDF();
   const generateKaufvertragDOCXMutation = useGenerateKaufvertragDOCX();
+  const generateKaufvertragJSONMutation = useGenerateKaufvertragJSON();
 
   // Calculate totals for Rechnung
   const selectedAutos = autos.filter(auto => autoIds.includes(auto.id));
@@ -397,6 +398,36 @@ const DokumenteErstellen = () => {
           <Card className="glass border-primary/20">
             <CardContent className="pt-6">
               <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                {documentType === 'kaufvertrag' && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => {
+                      if (selectedAutoId && kanzlei && kunde && bankkonto && insolventesUnternehmen && spedition) {
+                        generateKaufvertragJSONMutation.mutate({
+                          kanzlei_id: kanzlei,
+                          kunde_id: kunde,
+                          bankkonto_id: bankkonto,
+                          insolvente_unternehmen_id: insolventesUnternehmen,
+                          spedition_id: spedition,
+                          auto_id: selectedAutoId,
+                        });
+                      }
+                    }}
+                    disabled={!isValid || generateKaufvertragJSONMutation.isPending}
+                  >
+                    {generateKaufvertragJSONMutation.isPending ? (
+                      <>
+                        <Download className="w-4 h-4 mr-2 animate-spin" />
+                        Lade JSON...
+                      </>
+                    ) : (
+                      <>
+                        🔍 JSON Debug anzeigen
+                      </>
+                    )}
+                  </Button>
+                )}
                 <Button
                   variant="secondary"
                   size="lg"
@@ -437,21 +468,21 @@ const DokumenteErstellen = () => {
             </CardContent>
           </Card>
 
-          {/* Debug Card - JSON Data */}
-          {documentType === 'kaufvertrag' && generateKaufvertragPDFMutation.lastRequestData && (
+          {/* Debug Card - Complete JSON Data */}
+          {documentType === 'kaufvertrag' && generateKaufvertragJSONMutation.data && (
             <Card className="glass border-yellow-500/30">
               <CardHeader>
                 <CardTitle className="text-yellow-500 flex items-center gap-2">
-                  🔍 Debug: JSON an Docmosis API
+                  🔍 Debug: Vollständige JSON-Daten an Docmosis API
                 </CardTitle>
                 <CardDescription>
-                  Diese Daten wurden an die Edge Function gesendet
+                  Diese kompletten Daten werden an Docmosis gesendet (inkl. formatierte Preise, Daten, etc.)
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[400px]">
+                <ScrollArea className="h-[500px]">
                   <pre className="text-xs bg-black/50 p-4 rounded text-green-400 font-mono">
-                    {JSON.stringify(generateKaufvertragPDFMutation.lastRequestData, null, 2)}
+                    {JSON.stringify(generateKaufvertragJSONMutation.data, null, 2)}
                   </pre>
                 </ScrollArea>
               </CardContent>

@@ -49,14 +49,16 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
+    const requestBody = await req.json();
     const { 
       kanzlei_id,
       kunde_id,
       bankkonto_id,
       insolvente_unternehmen_id,
       spedition_id,
-      auto_id
-    } = await req.json();
+      auto_id,
+      debug
+    } = requestBody;
 
     console.log('Generating Kaufvertrag PDF with:', { kanzlei_id, kunde_id, bankkonto_id, insolvente_unternehmen_id, spedition_id, auto_id });
 
@@ -176,6 +178,20 @@ serve(async (req) => {
     };
 
     console.log('Kaufvertrag JSON data prepared:', jsonData);
+
+    // Debug mode: Return JSON instead of calling Docmosis
+    if (debug) {
+      console.log('Debug mode: Returning JSON data');
+      return new Response(
+        JSON.stringify(jsonData, null, 2),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
 
     // Call Docmosis to generate PDF
     const DOCMOSIS_API_KEY = Deno.env.get('DOCMOSIS_API_KEY');

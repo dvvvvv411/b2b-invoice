@@ -61,3 +61,26 @@ export const useGenerateKaufvertragPDF = () => {
     lastRequestData,
   };
 };
+
+export const useGenerateKaufvertragJSON = () => {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (input: GenerateKaufvertragInput) => {
+      const { data, error } = await supabase.functions.invoke('generate-kaufvertrag-pdf', {
+        body: { ...input, debug: true },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onError: (error: any) => {
+      console.error('Error fetching Kaufvertrag JSON:', error);
+      toast({
+        title: 'Fehler',
+        description: error.message || 'Fehler beim Abrufen der JSON-Daten.',
+        variant: 'destructive',
+      });
+    },
+  });
+};

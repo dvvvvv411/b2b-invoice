@@ -5,3 +5,12 @@ verify_jwt = true
 
 [functions.generate-rechnung-docx]
 verify_jwt = true
+
+[functions.generate-kaufvertrag-pdf]
+verify_jwt = true
+
+[functions.generate-kaufvertrag-docx]
+verify_jwt = true
+
+[functions.amount-to-words]
+verify_jwt = true

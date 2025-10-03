@@ -245,7 +245,7 @@ serve(async (req) => {
 
     console.log('Calling Docmosis API...');
 
-    // Call Docmosis API with inline storage to get binary PDF
+    // Call Docmosis API - will return binary PDF directly
     const docmosisResponse = await fetch(DOCMOSIS_API_URL, {
       method: 'POST',
       headers: {
@@ -255,7 +255,6 @@ serve(async (req) => {
         accessKey: DOCMOSIS_API_KEY,
         templateName: 'Rechnung.docx',
         outputName: `Rechnung_${rechnungsnummer}.pdf`,
-        storeTo: 'inline',
         data: jsonData
       })
     });

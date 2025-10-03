@@ -483,7 +483,7 @@ const DokumenteErstellen = () => {
                           <CommandEmpty>Kein Kunde gefunden.</CommandEmpty>
                           <CommandGroup>
                             <ScrollArea className="h-[300px]">
-                              {kunden.map((k) => (
+                              {(kunden || []).map((k) => (
                                 <CommandItem
                                   key={k.id}
                                   value={k.name}

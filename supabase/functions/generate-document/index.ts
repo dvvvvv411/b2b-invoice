@@ -298,7 +298,6 @@ serve(async (req) => {
     console.log('Generating final document...');
     const output = doc.getZip().generate({
       type: "uint8array",
-      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       compression: "DEFLATE",
     });
 
@@ -310,7 +309,12 @@ serve(async (req) => {
     
     console.log('Document generated successfully');
 
-    return new Response(output, {
+    // Convert Uint8Array to Blob for proper binary handling
+    const blob = new Blob([output], {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    });
+
+    return new Response(blob, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

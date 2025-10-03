@@ -25,11 +25,9 @@ import { Loader2 } from 'lucide-react';
 const speditionSchema = z.object({
   name: z.string().min(1, 'Unternehmensname ist erforderlich'),
   strasse: z.string().min(1, 'Straße und Hausnummer ist erforderlich'),
-  plz: z.string()
-    .min(5, 'PLZ muss mindestens 5 Zeichen haben')
-    .max(5, 'PLZ darf maximal 5 Zeichen haben')
-    .regex(/^\d+$/, 'PLZ darf nur Zahlen enthalten'),
-  stadt: z.string().min(1, 'Stadt ist erforderlich'),
+  plz_stadt: z.string()
+    .min(1, 'PLZ und Stadt sind erforderlich')
+    .regex(/^\d{5}\s+.+$/, 'Format: PLZ (5 Ziffern) Leerzeichen Stadt (z.B. "12345 Berlin")'),
 });
 
 interface SpeditionenFormProps {
@@ -50,8 +48,7 @@ export function SpeditionenForm({ open, onOpenChange, spedition }: SpeditionenFo
     defaultValues: {
       name: '',
       strasse: '',
-      plz: '',
-      stadt: '',
+      plz_stadt: '',
     },
   });
 
@@ -62,16 +59,14 @@ export function SpeditionenForm({ open, onOpenChange, spedition }: SpeditionenFo
       form.reset({
         name: spedition.name || '',
         strasse: spedition.strasse || '',
-        plz: spedition.plz || '',
-        stadt: spedition.stadt || '',
+        plz_stadt: spedition.plz_stadt || '',
       });
     } else if (open && !spedition) {
       // Creating new spedition - reset to empty values
       form.reset({
         name: '',
         strasse: '',
-        plz: '',
-        stadt: '',
+        plz_stadt: '',
       });
     }
   }, [open, spedition, form]);
@@ -137,26 +132,12 @@ export function SpeditionenForm({ open, onOpenChange, spedition }: SpeditionenFo
 
               <FormField
                 control={form.control}
-                name="plz"
+                name="plz_stadt"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>PLZ *</FormLabel>
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>PLZ und Stadt *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="12345" maxLength={5} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="stadt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Stadt *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Berlin" />
+                      <Input {...field} placeholder="12345 Berlin" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

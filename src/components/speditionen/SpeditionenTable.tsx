@@ -35,9 +35,8 @@ export function SpeditionenTable({
 
   const filteredSpeditionen = speditionen.filter(spedition =>
     spedition.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    spedition.stadt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    spedition.strasse.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    spedition.plz.includes(searchTerm)
+    spedition.plz_stadt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    spedition.strasse.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDelete = async () => {
@@ -92,7 +91,7 @@ export function SpeditionenTable({
                 <tr className="border-b border-border/30">
                   <th className="text-left py-3 px-4 font-medium text-foreground">Name</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">Adresse</th>
-                  <th className="text-left py-3 px-4 font-medium text-foreground">Stadt</th>
+                  <th className="text-left py-3 px-4 font-medium text-foreground">PLZ & Stadt</th>
                   <th className="text-left py-3 px-4 font-medium text-foreground">Aktionen</th>
                 </tr>
               </thead>
@@ -109,7 +108,7 @@ export function SpeditionenTable({
                       {spedition.strasse}
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">
-                      {spedition.plz} {spedition.stadt}
+                      {spedition.plz_stadt}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-2">

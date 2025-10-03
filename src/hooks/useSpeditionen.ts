@@ -6,8 +6,7 @@ export interface Spedition {
   id: string;
   name: string;
   strasse: string;
-  plz: string;
-  stadt: string;
+  plz_stadt: string;
   created_at: string;
   updated_at: string;
 }
@@ -15,8 +14,7 @@ export interface Spedition {
 export interface SpeditionInput {
   name: string;
   strasse: string;
-  plz: string;
-  stadt: string;
+  plz_stadt: string;
 }
 
 export const useSpeditionen = () => {

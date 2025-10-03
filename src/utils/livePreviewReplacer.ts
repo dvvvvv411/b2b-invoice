@@ -134,8 +134,14 @@ export const replacePlaceholdersWithRealData = (htmlContent: string, selectedDat
   if (selectedData.spedition) {
     processedHtml = processedHtml.replace(/\{\{SPEDITION_NAME\}\}/g, selectedData.spedition.name || '');
     processedHtml = processedHtml.replace(/\{\{SPEDITION_STRASSE\}\}/g, selectedData.spedition.strasse || '');
-    processedHtml = processedHtml.replace(/\{\{SPEDITION_PLZ\}\}/g, selectedData.spedition.plz || '');
-    processedHtml = processedHtml.replace(/\{\{SPEDITION_STADT\}\}/g, selectedData.spedition.stadt || '');
+    
+    // PLZ und Stadt aus dem kombinierten Feld extrahieren (Format: "12345 Berlin")
+    const plzStadtMatch = selectedData.spedition.plz_stadt?.match(/^(\d{5})\s+(.+)$/);
+    const plz = plzStadtMatch ? plzStadtMatch[1] : '';
+    const stadt = plzStadtMatch ? plzStadtMatch[2] : selectedData.spedition.plz_stadt || '';
+    
+    processedHtml = processedHtml.replace(/\{\{SPEDITION_PLZ\}\}/g, plz);
+    processedHtml = processedHtml.replace(/\{\{SPEDITION_STADT\}\}/g, stadt);
   }
   
   // AUTOMATISCHE DATEN

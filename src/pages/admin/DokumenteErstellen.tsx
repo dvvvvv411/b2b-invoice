@@ -814,20 +814,12 @@ const DokumenteErstellen = () => {
                  </div>
                  <Separator />
               <div className="flex justify-between items-center gap-4">
-                {/* Links: Bruttopreis */}
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-semibold">Bruttopreis:</span>
-                  <span className="font-bold text-2xl text-gradient-primary">
-                    {formatPrice(
-                      documentType === 'rechnung' 
-                        ? bruttopreis 
-                        : (isSingleVehicleKaufvertrag ? kaufvertragBruttopreis : kaufvertragMultipleBruttopreis)
-                    )}
-                  </span>
-                </div>
+                {/* Links: NUR das Label "Bruttopreis:" */}
+                <span className="text-lg font-semibold">Bruttopreis:</span>
 
-                {/* Rechts: Rabatt-Eingabe mit Checkbox */}
-                <div className="flex items-center gap-2">
+                {/* Rechts: Rabatt-Controls + Grüner Preis zusammen */}
+                <div className="flex items-center gap-3">
+                  {/* Rabatt-Eingabe */}
                   <Input
                     type="number"
                     placeholder="0"
@@ -851,6 +843,15 @@ const DokumenteErstellen = () => {
                   >
                     Rabatt anwenden
                   </Label>
+
+                  {/* Grüner Bruttopreis direkt daneben */}
+                  <span className="font-bold text-2xl text-gradient-primary ml-4">
+                    {formatPrice(
+                      documentType === 'rechnung' 
+                        ? bruttopreis 
+                        : (isSingleVehicleKaufvertrag ? kaufvertragBruttopreis : kaufvertragMultipleBruttopreis)
+                    )}
+                  </span>
                 </div>
               </div>
               </CardContent>

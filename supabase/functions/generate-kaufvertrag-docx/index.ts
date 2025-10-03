@@ -190,7 +190,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         accessKey: DOCMOSIS_API_KEY,
-        templateName: '/Kaufvertrag-1-P.docx',
+        templateName: 'Kaufvertrag-1-P.docx',
         outputName: 'kaufvertrag.docx',
         data: jsonData
       })

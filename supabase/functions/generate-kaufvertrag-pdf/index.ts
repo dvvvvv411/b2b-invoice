@@ -167,6 +167,12 @@ serve(async (req) => {
       return `${day}.${month}.${year}`;
     };
 
+    const formatIBAN = (iban: string | null) => {
+      if (!iban) return '';
+      const cleanIBAN = iban.replace(/\s/g, '').toUpperCase();
+      return cleanIBAN.match(/.{1,4}/g)?.join(' ') || cleanIBAN;
+    };
+
     // Prepare JSON data for Docmosis
     const jsonData = {
       kanzlei_name: kanzlei.name || '',
@@ -182,7 +188,7 @@ serve(async (req) => {
       kanzlei_ustid: kanzlei.ust_id || '',
       kanzlei_anwalt: kanzlei.rechtsanwalt || '',
       
-      iban: bankkonto.iban || '',
+      iban: formatIBAN(bankkonto.iban),
       bic: bankkonto.bic || '',
       bank: bankkonto.bankname || '',
       

@@ -49,6 +49,12 @@ const formatRechnungsnummer = (nummer: number): string => {
   return String(nummer).padStart(6, '0');
 };
 
+const formatIBAN = (iban: string | null): string => {
+  if (!iban) return '';
+  const cleanIBAN = iban.replace(/\s/g, '').toUpperCase();
+  return cleanIBAN.match(/.{1,4}/g)?.join(' ') || cleanIBAN;
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -206,7 +212,7 @@ serve(async (req) => {
       kanzlei_anwalt: kanzlei.rechtsanwalt,
       
       // Bankkonto
-      iban: bankkonto.iban,
+      iban: formatIBAN(bankkonto.iban),
       bic: bankkonto.bic,
       bank: bankkonto.bankname,
       kontoname: bankkonto.kontoname,

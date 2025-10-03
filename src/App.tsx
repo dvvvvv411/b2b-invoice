@@ -8,6 +8,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/admin/Dashboard";
+import DokumenteErstellen from "./pages/admin/DokumenteErstellen";
 import Kunden from "./pages/admin/Kunden";
 import Autos from "./pages/admin/Autos";
 import Kanzleien from "./pages/admin/Kanzleien";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
+              <Route path="dokumente-erstellen" element={<DokumenteErstellen />} />
               <Route path="kunden" element={<Kunden />} />
               <Route path="autos" element={<Autos />} />
               <Route path="kanzleien" element={<Kanzleien />} />

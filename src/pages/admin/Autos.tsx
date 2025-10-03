@@ -3,16 +3,14 @@ import { Button } from '@/components/ui/button';
 import { useAutos } from '@/hooks/useAutos';
 import { AutosTable } from '@/components/autos/AutosTable';
 import { AutoForm } from '@/components/autos/AutoForm';
-import { RechnungGeneratorDialog } from '@/components/autos/RechnungGeneratorDialog';
 import { formatPrice } from '@/lib/formatters';
-import { Plus, Car, AlertCircle, TrendingUp, FileText } from 'lucide-react';
+import { Plus, Car, AlertCircle, TrendingUp } from 'lucide-react';
 import type { Auto } from '@/hooks/useAutos';
 
 const Autos = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAuto, setEditingAuto] = useState<Auto | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
-  const [isRechnungDialogOpen, setIsRechnungDialogOpen] = useState(false);
   
   const { data: autos = [], isLoading, error } = useAutos();
 
@@ -76,16 +74,10 @@ const Autos = () => {
           </div>
         </div>
         
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => setIsRechnungDialogOpen(true)}>
-            <FileText className="w-4 h-4 mr-2" />
-            Rechnung erstellen
-          </Button>
-          <Button variant="gaming" onClick={handleCreate}>
-            <Plus className="w-4 h-4 mr-2" />
-            Neues Auto
-          </Button>
-        </div>
+        <Button variant="gaming" onClick={handleCreate}>
+          <Plus className="w-4 h-4 mr-2" />
+          Neues Auto
+        </Button>
       </div>
 
       {/* Stats */}
@@ -155,12 +147,6 @@ const Autos = () => {
         open={isFormOpen}
         onOpenChange={handleCloseForm}
         auto={editingAuto}
-      />
-
-      {/* Rechnung Generator Dialog */}
-      <RechnungGeneratorDialog
-        open={isRechnungDialogOpen}
-        onOpenChange={setIsRechnungDialogOpen}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, FileType, Download, Car } from 'lucide-react';
+import { FileText, FileType, Download, Car, Plus, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,6 +9,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useToast } from '@/hooks/use-toast';
 import { useKanzleien } from '@/hooks/useKanzleien';
 import { useKunden } from '@/hooks/useKunden';
 import { useBankkonten } from '@/hooks/useBankkonten';
@@ -37,6 +40,9 @@ const DokumenteErstellen = () => {
   const [spedition, setSpedition] = useState<string>('');
   const [autoIds, setAutoIds] = useState<string[]>([]);
   const [selectedAutoId, setSelectedAutoId] = useState<string>('');
+  const [dekraInput, setDekraInput] = useState<string>('');
+
+  const { toast } = useToast();
 
   const { data: kanzleien = [] } = useKanzleien();
   const { data: kunden = [] } = useKunden();
@@ -130,6 +136,59 @@ const DokumenteErstellen = () => {
       setAutoIds([]);
     } else {
       setAutoIds(autos.map(auto => auto.id));
+    }
+  };
+
+  const findAutoByDekra = (dekraNr: string) => {
+    return autos.find(auto => 
+      auto.dekra_bericht_nr?.toLowerCase().trim() === dekraNr.toLowerCase().trim()
+    );
+  };
+
+  const handleAddByDekra = () => {
+    const dekraNr = dekraInput.trim();
+    if (!dekraNr) return;
+
+    const foundAuto = findAutoByDekra(dekraNr);
+    
+    if (!foundAuto) {
+      toast({
+        title: 'Fahrzeug nicht gefunden',
+        description: `Kein Fahrzeug mit DEKRA-Nr. "${dekraNr}" gefunden.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (isSingleVehicleKaufvertrag) {
+      setSelectedAutoId(foundAuto.id);
+      toast({
+        title: 'Fahrzeug ausgewählt',
+        description: `${foundAuto.marke} ${foundAuto.modell} wurde ausgewählt.`,
+      });
+    } else {
+      if (autoIds.includes(foundAuto.id)) {
+        toast({
+          title: 'Bereits ausgewählt',
+          description: `${foundAuto.marke} ${foundAuto.modell} ist bereits in der Liste.`,
+        });
+      } else {
+        setAutoIds(prev => [...prev, foundAuto.id]);
+        toast({
+          title: 'Fahrzeug hinzugefügt',
+          description: `${foundAuto.marke} ${foundAuto.modell} zur Liste hinzugefügt.`,
+        });
+      }
+    }
+
+    setDekraInput('');
+  };
+
+  const handleRemoveAuto = (autoId: string) => {
+    if (isSingleVehicleKaufvertrag) {
+      setSelectedAutoId('');
+    } else {
+      setAutoIds(prev => prev.filter(id => id !== autoId));
     }
   };
 
@@ -343,32 +402,126 @@ const DokumenteErstellen = () => {
           {/* Vehicle Selection */}
           <Card className="glass border-primary/20">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-gradient-primary">
-                    {documentType === 'rechnung' || isMultipleVehicleKaufvertrag
-                      ? 'Fahrzeuge auswählen (mehrere möglich)'
-                      : 'Fahrzeug auswählen (nur eines)'}
-                  </CardTitle>
-                  <CardDescription>
-                    {documentType === 'rechnung' || isMultipleVehicleKaufvertrag
-                      ? `${autoIds.length} von ${autos.length} Fahrzeugen ausgewählt`
-                      : 'Wählen Sie ein Fahrzeug für den Kaufvertrag'}
-                  </CardDescription>
-                </div>
-                {(documentType === 'rechnung' || isMultipleVehicleKaufvertrag) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleToggleAll}
-                  >
-                    {autoIds.length === autos.length ? 'Keine auswählen' : 'Alle auswählen'}
-                  </Button>
-                )}
-              </div>
+              <CardTitle className="text-gradient-primary">
+                {documentType === 'rechnung' || isMultipleVehicleKaufvertrag
+                  ? 'Fahrzeuge auswählen (mehrere möglich)'
+                  : 'Fahrzeug auswählen (nur eines)'}
+              </CardTitle>
+              <CardDescription>
+                Geben Sie die DEKRA-Nummer ein, um Fahrzeuge schnell hinzuzufügen
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[300px] pr-4">
+            <CardContent className="space-y-4">
+              
+              {/* DEKRA Quick-Add Input */}
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    placeholder="DEKRA-Nummer eingeben (z.B. 0993)"
+                    value={dekraInput}
+                    onChange={(e) => setDekraInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddByDekra();
+                      }
+                    }}
+                    className="font-mono"
+                  />
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={handleAddByDekra}
+                  disabled={!dekraInput.trim()}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Hinzufügen
+                </Button>
+              </div>
+
+              {/* Selected Vehicles Display */}
+              {((isSingleVehicleKaufvertrag && selectedAutoId) || 
+                (!isSingleVehicleKaufvertrag && autoIds.length > 0)) && (
+                <div className="space-y-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-gradient-primary">
+                      Ausgewählte Fahrzeuge ({isSingleVehicleKaufvertrag ? 1 : autoIds.length})
+                    </p>
+                    {!isSingleVehicleKaufvertrag && autoIds.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAutoIds([])}
+                      >
+                        Alle entfernen
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {isSingleVehicleKaufvertrag ? (
+                      selectedAuto && (
+                        <div className="flex items-center justify-between p-3 bg-background rounded-md border border-border">
+                          <div className="flex-1">
+                            <p className="font-medium">{selectedAuto.marke} {selectedAuto.modell}</p>
+                            <p className="text-xs text-muted-foreground">
+                              DEKRA: {selectedAuto.dekra_bericht_nr} | FIN: {selectedAuto.fahrgestell_nr}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-bold text-gradient-secondary">
+                              {formatPrice(selectedAuto.einzelpreis_netto)}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveAuto(selectedAuto.id)}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    ) : (
+                      selectedAutos.map((auto) => (
+                        <div 
+                          key={auto.id}
+                          className="flex items-center justify-between p-3 bg-background rounded-md border border-border"
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium">{auto.marke} {auto.modell}</p>
+                            <p className="text-xs text-muted-foreground">
+                              DEKRA: {auto.dekra_bericht_nr} | FIN: {auto.fahrgestell_nr}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-bold text-gradient-secondary">
+                              {formatPrice(auto.einzelpreis_netto)}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveAuto(auto.id)}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Optional: Collapsible ScrollArea für manuelle Auswahl */}
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <ChevronDown className="w-4 h-4 mr-2" />
+                    Oder manuell aus Liste auswählen ({autos.length} Fahrzeuge)
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-3">
+                  <ScrollArea className="h-[300px] pr-4">
                 {(documentType === 'rechnung' || isMultipleVehicleKaufvertrag) ? (
                   <div className="space-y-3">
                     {autos.map((auto) => (
@@ -436,7 +589,10 @@ const DokumenteErstellen = () => {
                     </div>
                   </RadioGroup>
                 )}
-              </ScrollArea>
+                  </ScrollArea>
+                </CollapsibleContent>
+              </Collapsible>
+
             </CardContent>
           </Card>
 

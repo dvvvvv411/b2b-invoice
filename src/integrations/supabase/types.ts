@@ -152,39 +152,6 @@ export type Database = {
         }
         Relationships: []
       }
-      document_templates: {
-        Row: {
-          created_at: string | null
-          file_path: string
-          id: string
-          is_active: boolean | null
-          name: string
-          template_type: Database["public"]["Enums"]["template_type"]
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          file_path: string
-          id?: string
-          is_active?: boolean | null
-          name: string
-          template_type?: Database["public"]["Enums"]["template_type"]
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          file_path?: string
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          template_type?: Database["public"]["Enums"]["template_type"]
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       insolvente_unternehmen: {
         Row: {
           adresse: string | null
@@ -296,30 +263,6 @@ export type Database = {
         }
         Relationships: []
       }
-      rechnungsnummern: {
-        Row: {
-          created_at: string | null
-          id: string
-          letzte_nummer: number
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          letzte_nummer?: number
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          letzte_nummer?: number
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       speditionen: {
         Row: {
           created_at: string
@@ -361,7 +304,7 @@ export type Database = {
       }
     }
     Enums: {
-      template_type: "rechnung" | "angebot" | "mahnung" | "sonstiges"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -488,8 +431,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      template_type: ["rechnung", "angebot", "mahnung", "sonstiges"],
-    },
+    Enums: {},
   },
 } as const

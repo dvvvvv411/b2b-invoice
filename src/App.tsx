@@ -14,8 +14,6 @@ import Kanzleien from "./pages/admin/Kanzleien";
 import Bankkonten from "./pages/admin/Bankkonten";
 import Speditionen from "./pages/admin/Speditionen";
 import InsolventeUnternehmen from "./pages/admin/InsolventeUnternehmen";
-import DocumentTemplates from "./pages/admin/DocumentTemplates";
-import GenerateDocument from "./pages/admin/GenerateDocument";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,8 +36,6 @@ const App = () => (
               <Route path="bankkonten" element={<Bankkonten />} />
               <Route path="speditionen" element={<Speditionen />} />
               <Route path="insolvente-unternehmen" element={<InsolventeUnternehmen />} />
-              <Route path="vorlagen" element={<DocumentTemplates />} />
-              <Route path="dokumente-generieren" element={<GenerateDocument />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

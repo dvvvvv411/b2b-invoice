@@ -1,4 +1,1 @@
 project_id = "rjjkbnglizodcsjtqicq"
-
-[functions.generate-document]
-verify_jwt = true

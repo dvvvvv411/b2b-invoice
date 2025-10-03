@@ -181,15 +181,17 @@ serve(async (req) => {
       throw new Error('DOCMOSIS_API_KEY is not configured');
     }
 
-    const formData = new FormData();
-    formData.append('accessKey', DOCMOSIS_API_KEY);
-    formData.append('templateName', 'Kaufvertrag 1 Fahrzeug Privat.docx');
-    formData.append('outputName', 'kaufvertrag.docx');
-    formData.append('data', JSON.stringify(jsonData));
-
     const docmosisResponse = await fetch('https://eu1.dws4.docmosis.com/api/render', {
       method: 'POST',
-      body: formData,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        accessKey: DOCMOSIS_API_KEY,
+        templateName: 'Kaufvertrag 1 Fahrzeug Privat.docx',
+        outputName: 'kaufvertrag.docx',
+        data: jsonData
+      })
     });
 
     if (!docmosisResponse.ok) {

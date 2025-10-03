@@ -1,1 +1,4 @@
 project_id = "rjjkbnglizodcsjtqicq"
+
+[functions.generate-rechnung-pdf]
+verify_jwt = true

@@ -73,9 +73,8 @@ const GenerateDocument = () => {
       if (error) throw error;
 
       // Download the generated document
-      const blob = new Blob([data], {
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      });
+      // data is already a Blob from the Edge Function
+      const blob = data;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

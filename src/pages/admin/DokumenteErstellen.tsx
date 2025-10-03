@@ -423,7 +423,7 @@ const DokumenteErstellen = () => {
                 className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <Car className="w-4 h-4 mr-2" />
-                Kaufvertrag
+                {documentType === 'kaufvertrag' ? getKaufvertragLabel(kaufvertragType) : 'Kaufvertrag'}
                 <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
             </DropdownMenuTrigger>

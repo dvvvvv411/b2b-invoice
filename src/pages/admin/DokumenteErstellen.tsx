@@ -707,7 +707,7 @@ const DokumenteErstellen = () => {
                           handleAddByDekra();
                         }
                       }}
-                      maxLength={5}
+                      maxLength={10}
                       className="font-mono text-2xl font-bold w-32 h-16 text-center"
                     />
                     <Button

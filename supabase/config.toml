@@ -20,3 +20,6 @@ verify_jwt = true
 
 [functions.amount-to-words]
 verify_jwt = true
+
+[functions.create-bestellung-api]
+verify_jwt = false

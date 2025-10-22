@@ -155,6 +155,50 @@ export type Database = {
         }
         Relationships: []
       }
+      bestellungen: {
+        Row: {
+          created_at: string
+          dekra_nummern: string[]
+          id: string
+          kunde_id: string
+          kunde_typ: string
+          rabatt_aktiv: boolean | null
+          rabatt_prozent: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dekra_nummern?: string[]
+          id?: string
+          kunde_id: string
+          kunde_typ: string
+          rabatt_aktiv?: boolean | null
+          rabatt_prozent?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dekra_nummern?: string[]
+          id?: string
+          kunde_id?: string
+          kunde_typ?: string
+          rabatt_aktiv?: boolean | null
+          rabatt_prozent?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bestellungen_kunde_id_fkey"
+            columns: ["kunde_id"]
+            isOneToOne: false
+            referencedRelation: "kunden"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_templates: {
         Row: {
           created_at: string | null
@@ -364,10 +408,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_slug: {
-        Args: { input_text: string }
-        Returns: string
-      }
+      generate_slug: { Args: { input_text: string }; Returns: string }
     }
     Enums: {
       template_type: "rechnung" | "angebot" | "mahnung" | "sonstiges"

@@ -8,6 +8,7 @@ import {
   Truck,
   Factory,
   FileText,
+  ShoppingCart,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -24,6 +25,7 @@ import {
 const menuItems = [
   { title: 'Dashboard', url: '/admin', icon: BarChart3 },
   { title: 'Dokumente erstellen', url: '/admin/dokumente-erstellen', icon: FileText },
+  { title: 'Bestellungen', url: '/admin/bestellungen', icon: ShoppingCart },
   { title: 'Kunden', url: '/admin/kunden', icon: Users },
   { title: 'Autos', url: '/admin/autos', icon: Car },
   { title: 'Kanzleien', url: '/admin/kanzleien', icon: Building2 },

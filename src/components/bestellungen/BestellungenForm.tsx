@@ -1,14 +1,31 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useKunden } from '@/hooks/useKunden';
-import { useCreateBestellung, useUpdateBestellung, Bestellung, BestellungInput } from '@/hooks/useBestellungen';
-import { Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useCreateKunde, KundeInput } from '@/hooks/useKunden';
+import { useCreateBestellung, useUpdateBestellung, Bestellung } from '@/hooks/useBestellungen';
+import { Loader2, Sparkles } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+const bestellungSchema = z.object({
+  name: z.string().min(1, 'Unternehmensname ist erforderlich'),
+  adresse: z.string().min(1, 'Adresse ist erforderlich'),
+  plz: z.string()
+    .min(5, 'PLZ muss mindestens 5 Zeichen haben')
+    .max(5, 'PLZ darf maximal 5 Zeichen haben')
+    .regex(/^\d+$/, 'PLZ darf nur Zahlen enthalten'),
+  stadt: z.string().min(1, 'Stadt ist erforderlich'),
+  geschaeftsfuehrer: z.string().min(1, 'Geschäftsführer ist erforderlich'),
+  dekraNummern: z.string().min(1, 'Mindestens eine DEKRA-Nummer erforderlich'),
+  rabattProzent: z.string().optional(),
+});
 
 interface BestellungenFormProps {
   open: boolean;
@@ -17,166 +34,391 @@ interface BestellungenFormProps {
 }
 
 export function BestellungenForm({ open, onOpenChange, bestellung }: BestellungenFormProps) {
-  const [kundeId, setKundeId] = useState('');
-  const [dekraNummern, setDekraNummern] = useState('');
-  const [rabattAktiv, setRabattAktiv] = useState(false);
-  const [rabattProzent, setRabattProzent] = useState('');
-
-  const { data: kunden = [], isLoading: kundenLoading } = useKunden();
+  const createKunde = useCreateKunde();
   const createBestellung = useCreateBestellung();
   const updateBestellung = useUpdateBestellung();
+  const { toast } = useToast();
+  
+  const isEditing = !!bestellung;
+  const isLoading = createKunde.isPending || createBestellung.isPending || updateBestellung.isPending;
 
+  const [quickAddText, setQuickAddText] = useState('');
+  const [rabattAktiv, setRabattAktiv] = useState(false);
+  const [kundeData, setKundeData] = useState<KundeInput | null>(null);
+
+  const form = useForm<z.infer<typeof bestellungSchema>>({
+    resolver: zodResolver(bestellungSchema),
+    defaultValues: {
+      name: '',
+      adresse: '',
+      plz: '',
+      stadt: '',
+      geschaeftsfuehrer: '',
+      dekraNummern: '',
+      rabattProzent: '',
+    },
+  });
+
+  // Load kunde data when editing
   useEffect(() => {
-    if (bestellung) {
-      setKundeId(bestellung.kunde_id);
-      setDekraNummern(bestellung.dekra_nummern.join('\n'));
-      setRabattAktiv(bestellung.rabatt_aktiv);
-      setRabattProzent(bestellung.rabatt_prozent?.toString() || '');
-    } else {
-      setKundeId('');
-      setDekraNummern('');
-      setRabattAktiv(false);
-      setRabattProzent('');
-    }
-  }, [bestellung, open]);
+    const loadKundeData = async () => {
+      if (open && bestellung) {
+        const { data: kunde } = await supabase
+          .from('kunden')
+          .select('*')
+          .eq('id', bestellung.kunde_id)
+          .single();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+        if (kunde) {
+          setKundeData(kunde);
+          form.reset({
+            name: kunde.name || '',
+            adresse: kunde.adresse || '',
+            plz: kunde.plz || '',
+            stadt: kunde.stadt || '',
+            geschaeftsfuehrer: kunde.geschaeftsfuehrer || '',
+            dekraNummern: bestellung.dekra_nummern.join('\n'),
+            rabattProzent: bestellung.rabatt_prozent?.toString() || '',
+          });
+          setRabattAktiv(bestellung.rabatt_aktiv);
+        }
+      } else if (open && !bestellung) {
+        setKundeData(null);
+        form.reset({
+          name: '',
+          adresse: '',
+          plz: '',
+          stadt: '',
+          geschaeftsfuehrer: '',
+          dekraNummern: '',
+          rabattProzent: '',
+        });
+        setQuickAddText('');
+        setRabattAktiv(false);
+      }
+    };
 
-    if (!kundeId) {
+    loadKundeData();
+  }, [open, bestellung, form]);
+
+  const parseQuickAddText = (text: string) => {
+    const lines = text.trim().split('\n').map(line => line.trim()).filter(line => line);
+    
+    if (lines.length < 4) {
+      toast({
+        title: 'Fehler',
+        description: 'Bitte geben Sie alle 4 Zeilen ein (Name, Adresse, PLZ Stadt, Geschäftsführer)',
+        variant: 'destructive',
+      });
       return;
     }
 
-    // Find selected kunde
-    const selectedKunde = kunden.find(k => k.id === kundeId);
-    if (!selectedKunde) return;
+    const name = lines[0];
+    const adresse = lines[1];
+    const plzStadtLine = lines[2];
+    const geschaeftsfuehrer = lines[3];
 
-    // Determine kunde_typ automatically
-    const kundeTyp: 'privat' | 'unternehmen' = selectedKunde.name === selectedKunde.geschaeftsfuehrer ? 'privat' : 'unternehmen';
-
-    // Parse DEKRA numbers
-    const dekraArray = dekraNummern
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-
-    const bestellungData: BestellungInput = {
-      kunde_id: kundeId,
-      kunde_typ: kundeTyp,
-      dekra_nummern: dekraArray,
-      rabatt_aktiv: rabattAktiv,
-      rabatt_prozent: rabattAktiv && rabattProzent ? parseFloat(rabattProzent) : null,
-    };
-
-    if (bestellung) {
-      await updateBestellung.mutateAsync({
-        id: bestellung.id,
-        bestellung: bestellungData,
+    const plzStadtMatch = plzStadtLine.match(/^(\d{5})\s+(.+)$/);
+    
+    if (!plzStadtMatch) {
+      toast({
+        title: 'Fehler',
+        description: 'PLZ-Stadt Format ungültig. Bitte Format "12345 Stadt" verwenden.',
+        variant: 'destructive',
       });
-    } else {
-      await createBestellung.mutateAsync(bestellungData);
+      return;
     }
 
+    const plz = plzStadtMatch[1];
+    const stadt = plzStadtMatch[2];
+
+    form.setValue('name', name);
+    form.setValue('adresse', adresse);
+    form.setValue('plz', plz);
+    form.setValue('stadt', stadt);
+    form.setValue('geschaeftsfuehrer', geschaeftsfuehrer);
+
+    setQuickAddText('');
+
+    toast({
+      title: 'Erfolg',
+      description: 'Daten wurden übernommen!',
+    });
+  };
+
+  const onSubmit = async (data: z.infer<typeof bestellungSchema>) => {
+    try {
+      const dekraArray = data.dekraNummern
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+      if (dekraArray.length === 0) {
+        toast({
+          title: 'Fehler',
+          description: 'Bitte geben Sie mindestens eine DEKRA-Nummer ein.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (isEditing && bestellung) {
+        // When editing, only update bestellung data (kunde stays same)
+        const kundeTyp: 'privat' | 'unternehmen' = data.name === data.geschaeftsfuehrer ? 'privat' : 'unternehmen';
+        
+        await updateBestellung.mutateAsync({
+          id: bestellung.id,
+          bestellung: {
+            kunde_id: bestellung.kunde_id,
+            kunde_typ: kundeTyp,
+            dekra_nummern: dekraArray,
+            rabatt_aktiv: rabattAktiv,
+            rabatt_prozent: rabattAktiv && data.rabattProzent ? parseFloat(data.rabattProzent) : null,
+          },
+        });
+      } else {
+        // Create new kunde first
+        const kundeInput: KundeInput = {
+          name: data.name,
+          adresse: data.adresse,
+          plz: data.plz,
+          stadt: data.stadt,
+          geschaeftsfuehrer: data.geschaeftsfuehrer,
+        };
+
+        const newKunde = await createKunde.mutateAsync(kundeInput);
+        
+        if (!newKunde) {
+          toast({
+            title: 'Fehler',
+            description: 'Kunde konnte nicht erstellt werden.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Determine kunde_typ
+        const kundeTyp: 'privat' | 'unternehmen' = data.name === data.geschaeftsfuehrer ? 'privat' : 'unternehmen';
+
+        // Create bestellung with new kunde_id
+        await createBestellung.mutateAsync({
+          kunde_id: newKunde.id,
+          kunde_typ: kundeTyp,
+          dekra_nummern: dekraArray,
+          rabatt_aktiv: rabattAktiv,
+          rabatt_prozent: rabattAktiv && data.rabattProzent ? parseFloat(data.rabattProzent) : null,
+        });
+      }
+      
+      handleClose();
+    } catch (error) {
+      // Error handling is done in the mutation hooks
+    }
+  };
+
+  const handleClose = () => {
+    form.reset();
+    setQuickAddText('');
+    setRabattAktiv(false);
+    setKundeData(null);
     onOpenChange(false);
   };
 
-  const isLoading = createBestellung.isPending || updateBestellung.isPending;
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {bestellung ? 'Bestellung bearbeiten' : 'Neue Bestellung'}
+            {isEditing ? 'Bestellung bearbeiten' : 'Neue Bestellung'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Kunde auswählen */}
-          <div className="space-y-2">
-            <Label htmlFor="kunde">Kunde *</Label>
-            <Select value={kundeId} onValueChange={setKundeId} disabled={kundenLoading}>
-              <SelectTrigger>
-                <SelectValue placeholder="Kunde auswählen" />
-              </SelectTrigger>
-              <SelectContent>
-                {kunden.map((kunde) => (
-                  <SelectItem key={kunde.id} value={kunde.id}>
-                    {kunde.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {kundeId && kunden.find(k => k.id === kundeId) && (
-              <p className="text-sm text-muted-foreground">
-                Typ: {kunden.find(k => k.id === kundeId)?.name === kunden.find(k => k.id === kundeId)?.geschaeftsfuehrer ? 'Privat' : 'Unternehmen'}
-              </p>
-            )}
-          </div>
-
-          {/* DEKRA Nummern */}
-          <div className="space-y-2">
-            <Label htmlFor="dekra">DEKRA-Nummern *</Label>
-            <Textarea
-              id="dekra"
-              value={dekraNummern}
-              onChange={(e) => setDekraNummern(e.target.value)}
-              placeholder="Eine DEKRA-Nummer pro Zeile"
-              rows={5}
-              required
-            />
-            <p className="text-sm text-muted-foreground">
-              Geben Sie jede DEKRA-Nummer in einer neuen Zeile ein
-            </p>
-          </div>
-
-          {/* Rabatt */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="rabatt"
-                checked={rabattAktiv}
-                onCheckedChange={setRabattAktiv}
-              />
-              <Label htmlFor="rabatt" className="cursor-pointer">
-                Rabatt aktivieren
-              </Label>
-            </div>
-
-            {rabattAktiv && (
-              <div className="space-y-2">
-                <Label htmlFor="prozent">Rabatt in %</Label>
-                <Input
-                  id="prozent"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={rabattProzent}
-                  onChange={(e) => setRabattProzent(e.target.value)}
-                  placeholder="z.B. 10"
-                  required={rabattAktiv}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Quick Add Section - nur beim Erstellen */}
+            {!isEditing && (
+              <div className="space-y-3 pb-4 border-b">
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <h3 className="text-sm font-semibold">
+                    Quick Add - Alle Daten auf einmal einfügen
+                  </h3>
+                </div>
+                
+                <Textarea
+                  value={quickAddText}
+                  onChange={(e) => setQuickAddText(e.target.value)}
+                  placeholder={`Unternehmensname\nAdresse & Hausnummer\nPLZ Stadt\nGeschäftsführer\n\nBeispiel:\nHuT Handling und Transport GmbH\nLuftfrachtzentrum 605/5\n70629 Stuttgart-Flughafen\nSebastian Kossack`}
+                  className="min-h-[120px] font-mono text-sm"
                 />
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => parseQuickAddText(quickAddText)}
+                  disabled={!quickAddText.trim()}
+                  className="w-full"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Daten übernommen
+                </Button>
               </div>
             )}
-          </div>
 
-          {/* Buttons */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isLoading}
-            >
-              Abbrechen
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {bestellung ? 'Aktualisieren' : 'Erstellen'}
-            </Button>
-          </div>
-        </form>
+            {/* Kundendaten */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold">Kundendaten</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Unternehmensname *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Beispiel GmbH" disabled={isEditing} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="adresse"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Adresse & Hausnummer *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Musterstraße 123" disabled={isEditing} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="plz"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>PLZ *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="12345" maxLength={5} disabled={isEditing} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="stadt"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Stadt *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Berlin" disabled={isEditing} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="geschaeftsfuehrer"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Geschäftsführer *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Max Mustermann" disabled={isEditing} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* DEKRA Nummern */}
+            <FormField
+              control={form.control}
+              name="dekraNummern"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>DEKRA-Nummern *</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Eine DEKRA-Nummer pro Zeile"
+                      rows={5}
+                    />
+                  </FormControl>
+                  <p className="text-sm text-muted-foreground">
+                    Geben Sie jede DEKRA-Nummer in einer neuen Zeile ein
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Rabatt */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="rabatt"
+                  checked={rabattAktiv}
+                  onCheckedChange={setRabattAktiv}
+                />
+                <label htmlFor="rabatt" className="text-sm font-medium cursor-pointer">
+                  Rabatt aktivieren
+                </label>
+              </div>
+
+              {rabattAktiv && (
+                <FormField
+                  control={form.control}
+                  name="rabattProzent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Rabatt in %</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          placeholder="z.B. 10"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                Abbrechen
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditing ? 'Aktualisieren' : 'Erstellen'}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

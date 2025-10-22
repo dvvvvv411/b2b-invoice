@@ -12,6 +12,14 @@ export interface Bestellung {
   rabatt_aktiv: boolean;
   created_at: string;
   updated_at: string;
+  kunde?: {
+    id: string;
+    name: string;
+    adresse: string | null;
+    plz: string | null;
+    stadt: string | null;
+    geschaeftsfuehrer: string | null;
+  };
 }
 
 export interface BestellungInput {
@@ -31,7 +39,10 @@ export const useBestellungen = () => {
 
       const { data, error } = await supabase
         .from('bestellungen')
-        .select('*')
+        .select(`
+          *,
+          kunde:kunden(*)
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 

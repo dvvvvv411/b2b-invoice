@@ -23,7 +23,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Pencil, Trash2, Search, ArrowRight } from 'lucide-react';
 import { useBestellungen, useDeleteBestellung, Bestellung } from '@/hooks/useBestellungen';
-import { useKunden } from '@/hooks/useKunden';
 
 interface BestellungenTableProps {
   onEdit: (bestellung: Bestellung) => void;
@@ -35,12 +34,10 @@ export function BestellungenTable({ onEdit }: BestellungenTableProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: bestellungen = [], isLoading } = useBestellungen();
-  const { data: kunden = [] } = useKunden();
   const deleteBestellung = useDeleteBestellung();
 
   const filteredBestellungen = bestellungen.filter((bestellung) => {
-    const kunde = kunden.find(k => k.id === bestellung.kunde_id);
-    const kundeName = kunde?.name || '';
+    const kundeName = bestellung.kunde?.name || '';
     return kundeName.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
@@ -96,11 +93,10 @@ export function BestellungenTable({ onEdit }: BestellungenTableProps) {
               </TableRow>
             ) : (
               filteredBestellungen.map((bestellung) => {
-                const kunde = kunden.find(k => k.id === bestellung.kunde_id);
                 return (
                   <TableRow key={bestellung.id}>
                     <TableCell className="font-medium">
-                      {kunde?.name || 'Unbekannt'}
+                      {bestellung.kunde?.name || 'Unbekannt'}
                     </TableCell>
                     <TableCell>
                       <Badge variant={bestellung.kunde_typ === 'privat' ? 'default' : 'secondary'}>

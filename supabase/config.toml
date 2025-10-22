@@ -12,5 +12,11 @@ verify_jwt = true
 [functions.generate-kaufvertrag-docx]
 verify_jwt = true
 
+[functions.generate-treuhandvertrag-pdf]
+verify_jwt = true
+
+[functions.generate-treuhandvertrag-docx]
+verify_jwt = true
+
 [functions.amount-to-words]
 verify_jwt = true

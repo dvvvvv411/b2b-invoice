@@ -29,15 +29,18 @@ import { useGenerateRechnungPDF } from '@/hooks/useGenerateRechnungPDF';
 import { useGenerateRechnungDOCX } from '@/hooks/useGenerateRechnungDOCX';
 import { useGenerateKaufvertragPDF, useGenerateKaufvertragJSON } from '@/hooks/useGenerateKaufvertragPDF';
 import { useGenerateKaufvertragDOCX } from '@/hooks/useGenerateKaufvertragDOCX';
+import { useGenerateTreuhandvertragPDF } from '@/hooks/useGenerateTreuhandvertragPDF';
+import { useGenerateTreuhandvertragDOCX } from '@/hooks/useGenerateTreuhandvertragDOCX';
 import { formatPrice } from '@/lib/formatters';
 import { KundenForm } from '@/components/kunden/KundenForm';
 import { BankkontenForm } from '@/components/bankkonten/BankkontenForm';
 
-type DocumentType = 'rechnung' | 'kaufvertrag';
+type DocumentType = 'rechnung' | 'kaufvertrag' | 'treuhandvertrag';
 
 const DokumenteErstellen = () => {
   const [documentType, setDocumentType] = useState<DocumentType>('rechnung');
   const [kaufvertragType, setKaufvertragType] = useState<string>('kaufvertrag-1-p');
+  const [treuhandvertragGender, setTreuhandvertragGender] = useState<'M' | 'W'>('M');
   const [kanzlei, setKanzlei] = useState<string>('');
   const [kunde, setKunde] = useState<string>('');
   const [bankkonto, setBankkonto] = useState<string>('');
@@ -70,6 +73,8 @@ const DokumenteErstellen = () => {
   const generateKaufvertragPDFMutation = useGenerateKaufvertragPDF();
   const generateKaufvertragDOCXMutation = useGenerateKaufvertragDOCX();
   const generateKaufvertragJSONMutation = useGenerateKaufvertragJSON();
+  const generateTreuhandvertragPDFMutation = useGenerateTreuhandvertragPDF();
+  const generateTreuhandvertragDOCXMutation = useGenerateTreuhandvertragDOCX();
 
   // Helper functions
   const getKaufvertragLabel = (type: string) => {
@@ -163,11 +168,14 @@ const DokumenteErstellen = () => {
   const isValidRechnung = kanzlei && kunde && bankkonto && insolventesUnternehmen && autoIds.length > 0;
   const isValidKaufvertragSingle = kanzlei && kunde && bankkonto && insolventesUnternehmen && spedition && selectedAutoId;
   const isValidKaufvertragMultiple = kanzlei && kunde && bankkonto && insolventesUnternehmen && spedition && autoIds.length > 0;
+  const isValidTreuhandvertrag = kanzlei && kunde && bankkonto && insolventesUnternehmen;
   
   const isValid = 
     documentType === 'rechnung' 
       ? isValidRechnung 
-      : (isSingleVehicleKaufvertrag ? isValidKaufvertragSingle : isValidKaufvertragMultiple);
+      : documentType === 'treuhandvertrag'
+        ? isValidTreuhandvertrag
+        : (isSingleVehicleKaufvertrag ? isValidKaufvertragSingle : isValidKaufvertragMultiple);
 
   const handleToggleAuto = (autoId: string) => {
     setAutoIds(prev =>
@@ -320,6 +328,14 @@ const DokumenteErstellen = () => {
         auto_ids: autoIds,
         discounted_autos: autosWithDiscount,
       });
+    } else if (documentType === 'treuhandvertrag') {
+      generateTreuhandvertragPDFMutation.mutate({
+        kanzlei_id: kanzlei,
+        kunde_id: kunde,
+        bankkonto_id: bankkonto,
+        insolvente_unternehmen_id: insolventesUnternehmen,
+        gender: treuhandvertragGender,
+      });
     } else {
       const autosForKaufvertrag = isSingleVehicleKaufvertrag 
         ? (selectedAuto ? [selectedAuto] : [])
@@ -384,6 +400,14 @@ const DokumenteErstellen = () => {
         auto_ids: autoIds,
         discounted_autos: autosWithDiscount,
       });
+    } else if (documentType === 'treuhandvertrag') {
+      generateTreuhandvertragDOCXMutation.mutate({
+        kanzlei_id: kanzlei,
+        kunde_id: kunde,
+        bankkonto_id: bankkonto,
+        insolvente_unternehmen_id: insolventesUnternehmen,
+        gender: treuhandvertragGender,
+      });
     } else {
       const autosForKaufvertrag = isSingleVehicleKaufvertrag 
         ? (selectedAuto ? [selectedAuto] : [])
@@ -435,7 +459,9 @@ const DokumenteErstellen = () => {
     generateRechnungPDFMutation.isPending || 
     generateRechnungDOCXMutation.isPending ||
     generateKaufvertragPDFMutation.isPending ||
-    generateKaufvertragDOCXMutation.isPending;
+    generateKaufvertragDOCXMutation.isPending ||
+    generateTreuhandvertragPDFMutation.isPending ||
+    generateTreuhandvertragDOCXMutation.isPending;
 
   return (
     <div className="p-6 space-y-6">
@@ -505,6 +531,36 @@ const DokumenteErstellen = () => {
                   }}
                 >
                   Mehrere Fahrzeuge (Unternehmen)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant={documentType === 'treuhandvertrag' ? 'default' : 'ghost'}
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <FileType className="w-4 h-4 mr-2" />
+                  {documentType === 'treuhandvertrag' ? `Treuhandvertrag (${treuhandvertragGender === 'M' ? 'Männlich' : 'Weiblich'})` : 'Treuhandvertrag'}
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64">
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setDocumentType('treuhandvertrag');
+                    setTreuhandvertragGender('M');
+                  }}
+                >
+                  Männlich
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setDocumentType('treuhandvertrag');
+                    setTreuhandvertragGender('W');
+                  }}
+                >
+                  Weiblich
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1775,6 +1831,209 @@ const DokumenteErstellen = () => {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="treuhandvertrag" className="mt-6 space-y-6">
+          {/* Treuhandvertrag Details */}
+          <Card className="glass border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-gradient-primary">Treuhandvertragsdetails</CardTitle>
+              <CardDescription>
+                Geben Sie die Informationen für den Treuhandvertrag ein
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Kanzlei */}
+                <div className="space-y-2">
+                  <Label htmlFor="kanzlei-tv">Kanzlei *</Label>
+                  <Select value={kanzlei} onValueChange={setKanzlei}>
+                    <SelectTrigger id="kanzlei-tv">
+                      <SelectValue placeholder="Kanzlei auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {kanzleien.map((k) => (
+                        <SelectItem key={k.id} value={k.id}>
+                          {k.name} {k.is_default && '⭐'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Kunde */}
+                <div className="space-y-2">
+                  <Label htmlFor="kunde-tv">Kunde *</Label>
+                  <div className="flex gap-2">
+                    <Popover open={kundeComboboxOpen} onOpenChange={setKundeComboboxOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={kundeComboboxOpen}
+                          className="flex-1 justify-between"
+                        >
+                          {kunde
+                            ? kunden.find((k) => k.id === kunde)?.name
+                            : "Kunde auswählen"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Kunde suchen..." />
+                          <CommandList>
+                            <CommandEmpty>Kein Kunde gefunden.</CommandEmpty>
+                            <CommandGroup>
+                              {(kunden || []).map((k) => (
+                                <CommandItem
+                                  key={k.id}
+                                  value={k.name}
+                                  onSelect={() => {
+                                    setKunde(k.id);
+                                    setKundeComboboxOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      kunde === k.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {k.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsKundenFormOpen(true)}
+                      className="shrink-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Bankkonto */}
+                <div className="space-y-2">
+                  <Label htmlFor="bankkonto-tv">Bankkonto *</Label>
+                  <div className="flex gap-2">
+                    <Select value={bankkonto} onValueChange={setBankkonto}>
+                      <SelectTrigger id="bankkonto-tv" className="flex-1">
+                        <SelectValue placeholder="Bankkonto auswählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bankkonten.map((b) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.kontoname || b.iban}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsBankkontenFormOpen(true)}
+                      className="shrink-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Insolventes Unternehmen */}
+                <div className="space-y-2">
+                  <Label htmlFor="insolventes-unternehmen-tv">Insolventes Unternehmen *</Label>
+                  <Select value={insolventesUnternehmen} onValueChange={setInsolventesUnternehmen}>
+                    <SelectTrigger id="insolventes-unternehmen-tv">
+                      <SelectValue placeholder="Unternehmen auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {insolventeUnternehmen.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.name} {u.is_default && '⭐'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Gender Selection */}
+              <div className="space-y-2 pt-4">
+                <Label>Geschlecht für Template *</Label>
+                <RadioGroup
+                  value={treuhandvertragGender}
+                  onValueChange={(value: 'M' | 'W') => setTreuhandvertragGender(value)}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="M" id="gender-m" />
+                    <Label htmlFor="gender-m" className="cursor-pointer">
+                      Männlich (Treuhandvertrag-M.docx)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="W" id="gender-w" />
+                    <Label htmlFor="gender-w" className="cursor-pointer">
+                      Weiblich (Treuhandvertrag-W.docx)
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <Card className="glass border-primary/20">
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  onClick={handleGenerateDOCX}
+                  disabled={!isValid || isGenerating}
+                >
+                  {generateTreuhandvertragDOCXMutation.isPending ? (
+                    <>
+                      <Download className="w-4 h-4 mr-2 animate-bounce" />
+                      Generiere DOCX...
+                    </>
+                  ) : (
+                    <>
+                      <FileType className="w-4 h-4 mr-2" />
+                      DOCX generieren
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="gaming"
+                  size="lg"
+                  onClick={handleGeneratePDF}
+                  disabled={!isValid || isGenerating}
+                >
+                  {generateTreuhandvertragPDFMutation.isPending ? (
+                    <>
+                      <Download className="w-4 h-4 mr-2 animate-bounce" />
+                      Generiere PDF...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4 mr-2" />
+                      PDF generieren
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 

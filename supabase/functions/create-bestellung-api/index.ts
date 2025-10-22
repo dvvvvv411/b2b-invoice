@@ -191,13 +191,12 @@ serve(async (req) => {
       kunde_typ: kundeTyp
     });
 
-    // Format DEKRA numbers: "12345" -> "DEKRA-12345"
+    // Keep DEKRA numbers as pure numbers (remove any non-digits)
     const formattierteDekraNummern = dekra_nummern.map((num: string) => {
-      const cleanNum = String(num).replace(/\D/g, '');
-      return `DEKRA-${cleanNum}`;
+      return String(num).replace(/\D/g, ''); // nur Zahlen behalten
     });
 
-    console.log('[create-bestellung-api] Formatted DEKRA numbers:', formattierteDekraNummern);
+    console.log('[create-bestellung-api] Cleaned DEKRA numbers:', formattierteDekraNummern);
 
     // Create bestellung
     const { data: bestellung, error: bestellungError } = await supabase

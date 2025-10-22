@@ -151,6 +151,7 @@ export function BestellungenForm({ open, onOpenChange, bestellung }: Bestellunge
       const dekraArray = data.dekraNummern
         .split('\n')
         .map(line => line.trim())
+        .map(line => line.replace(/\D/g, '')) // NUR ZAHLEN BEHALTEN
         .filter(line => line.length > 0);
 
       if (dekraArray.length === 0) {

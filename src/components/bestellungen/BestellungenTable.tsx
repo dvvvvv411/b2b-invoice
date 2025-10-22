@@ -23,6 +23,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Pencil, Trash2, Search, ArrowRight } from 'lucide-react';
 import { useBestellungen, useDeleteBestellung, Bestellung } from '@/hooks/useBestellungen';
+import { useAutos } from '@/hooks/useAutos';
+import { formatPrice } from '@/lib/formatters';
 
 interface BestellungenTableProps {
   onEdit: (bestellung: Bestellung) => void;
@@ -34,7 +36,32 @@ export function BestellungenTable({ onEdit }: BestellungenTableProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: bestellungen = [], isLoading } = useBestellungen();
+  const { data: autos = [] } = useAutos();
   const deleteBestellung = useDeleteBestellung();
+
+  // Berechne Gesamtwert inkl. MwSt für eine Bestellung
+  const calculateGesamtwert = (bestellung: Bestellung): number => {
+    // Finde zugehörige Autos anhand DEKRA-Nummern
+    const bestellungsAutos = autos.filter(auto => 
+      bestellung.dekra_nummern.includes(auto.dekra_bericht_nr)
+    );
+
+    // Summiere Nettopreise
+    const summeNetto = bestellungsAutos.reduce((sum, auto) => {
+      return sum + (auto.einzelpreis_netto || 0);
+    }, 0);
+
+    // Rabatt anwenden
+    let summeNachRabatt = summeNetto;
+    if (bestellung.rabatt_aktiv && bestellung.rabatt_prozent) {
+      summeNachRabatt = summeNetto * (1 - bestellung.rabatt_prozent / 100);
+    }
+
+    // MwSt 19% hinzufügen
+    const gesamtBrutto = summeNachRabatt * 1.19;
+
+    return gesamtBrutto;
+  };
 
   const filteredBestellungen = bestellungen.filter((bestellung) => {
     const kundeName = bestellung.kunde?.name || '';
@@ -78,6 +105,7 @@ export function BestellungenTable({ onEdit }: BestellungenTableProps) {
             <TableRow>
               <TableHead>Kunde</TableHead>
               <TableHead>Typ</TableHead>
+              <TableHead>Gesamtwert inkl. MwSt</TableHead>
               <TableHead>Fahrzeuge</TableHead>
               <TableHead>Rabatt</TableHead>
               <TableHead>Erstellt am</TableHead>
@@ -87,7 +115,7 @@ export function BestellungenTable({ onEdit }: BestellungenTableProps) {
           <TableBody>
             {filteredBestellungen.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Keine Bestellungen gefunden
                 </TableCell>
               </TableRow>
@@ -102,6 +130,9 @@ export function BestellungenTable({ onEdit }: BestellungenTableProps) {
                       <Badge variant={bestellung.kunde_typ === 'privat' ? 'default' : 'secondary'}>
                         {bestellung.kunde_typ === 'privat' ? 'Privat' : 'Unternehmen'}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="font-semibold">
+                      {formatPrice(calculateGesamtwert(bestellung))}
                     </TableCell>
                     <TableCell>
                       {bestellung.dekra_nummern.length} Fahrzeug{bestellung.dekra_nummern.length !== 1 ? 'e' : ''}

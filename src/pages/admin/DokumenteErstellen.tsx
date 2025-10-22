@@ -67,6 +67,7 @@ const DokumenteErstellen = () => {
   const { data: autos = [] } = useAutos();
 
   const [includeRechnung, setIncludeRechnung] = useState<boolean>(false);
+  const [includeTreuhandvertrag, setIncludeTreuhandvertrag] = useState<boolean>(false);
 
   const generateRechnungPDFMutation = useGenerateRechnungPDF();
   const generateRechnungDOCXMutation = useGenerateRechnungDOCX();
@@ -378,6 +379,15 @@ const DokumenteErstellen = () => {
               discounted_autos: rechnungAutosWithDiscount,
             });
           }
+          if (includeTreuhandvertrag) {
+            generateTreuhandvertragPDFMutation.mutate({
+              kanzlei_id: kanzlei,
+              kunde_id: kunde,
+              bankkonto_id: bankkonto,
+              insolvente_unternehmen_id: insolventesUnternehmen,
+              gender: treuhandvertragGender,
+            });
+          }
         }
       });
     }
@@ -448,6 +458,15 @@ const DokumenteErstellen = () => {
               insolvente_unternehmen_id: insolventesUnternehmen,
               auto_ids: rechnungAutoIds,
               discounted_autos: rechnungAutosWithDiscount,
+            });
+          }
+          if (includeTreuhandvertrag) {
+            generateTreuhandvertragDOCXMutation.mutate({
+              kanzlei_id: kanzlei,
+              kunde_id: kunde,
+              bankkonto_id: bankkonto,
+              insolvente_unternehmen_id: insolventesUnternehmen,
+              gender: treuhandvertragGender,
             });
           }
         }
@@ -1701,6 +1720,30 @@ const DokumenteErstellen = () => {
                   )}
                 </div>
 
+                {/* Include Rechnung Toggle */}
+                <div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/50">
+                  <Switch
+                    id="include-rechnung-kv"
+                    checked={includeRechnung}
+                    onCheckedChange={setIncludeRechnung}
+                  />
+                  <Label htmlFor="include-rechnung-kv" className="cursor-pointer font-medium">
+                    inkl. Rechnung
+                  </Label>
+                </div>
+
+                {/* Include Treuhandvertrag Toggle */}
+                <div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/50">
+                  <Switch
+                    id="include-treuhandvertrag-kv"
+                    checked={includeTreuhandvertrag}
+                    onCheckedChange={setIncludeTreuhandvertrag}
+                  />
+                  <Label htmlFor="include-treuhandvertrag-kv" className="cursor-pointer font-medium">
+                    inkl. Treuhandvertrag
+                  </Label>
+                </div>
+
                 {/* Price Summary */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-lg">
@@ -1774,6 +1817,38 @@ const DokumenteErstellen = () => {
               </RadioGroup>
             </CardContent>
           </Card>
+
+          {/* Conditional Treuhandvertrag Gender Selection */}
+          {includeTreuhandvertrag && (
+            <Card className="glass border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-gradient-primary">Geschlecht für Treuhandvertrag *</CardTitle>
+                <CardDescription>
+                  Wählen Sie das Geschlecht für das Treuhandvertrag-Template aus
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RadioGroup
+                  value={treuhandvertragGender}
+                  onValueChange={(value: 'M' | 'W') => setTreuhandvertragGender(value)}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+                    <RadioGroupItem value="M" id="gender-m-kv" />
+                    <Label htmlFor="gender-m-kv" className="cursor-pointer">
+                      Männlich
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+                    <RadioGroupItem value="W" id="gender-w-kv" />
+                    <Label htmlFor="gender-w-kv" className="cursor-pointer">
+                      Weiblich
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Generate Buttons */}
           <Card className="glass border-accent/20">

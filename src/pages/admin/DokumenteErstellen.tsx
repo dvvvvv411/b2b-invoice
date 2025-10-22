@@ -1806,6 +1806,38 @@ const DokumenteErstellen = () => {
             </CardContent>
           </Card>
 
+          {/* Treuhandvertrag Gender Selection - nur wenn Toggle aktiv */}
+          {includeTreuhandvertrag && (
+            <Card className="glass border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-gradient-primary">Geschlecht für Treuhandvertrag *</CardTitle>
+                <CardDescription>
+                  Wählen Sie das Geschlecht für das Treuhandvertrag-Template aus
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RadioGroup
+                  value={treuhandvertragGender}
+                  onValueChange={(value: 'M' | 'W') => setTreuhandvertragGender(value)}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+                    <RadioGroupItem value="M" id="gender-m-kv" />
+                    <Label htmlFor="gender-m-kv" className="cursor-pointer">
+                      Männlich
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+                    <RadioGroupItem value="W" id="gender-w-kv" />
+                    <Label htmlFor="gender-w-kv" className="cursor-pointer">
+                      Weiblich
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Generate Buttons */}
           <Card className="glass border-accent/20">
             <CardHeader>

@@ -42,6 +42,8 @@ type DocumentType = 'rechnung' | 'kaufvertrag' | 'treuhandvertrag';
 const DokumenteErstellen = () => {
   const [searchParams] = useSearchParams();
   const bestellungId = searchParams.get('bestellung');
+  const includeRechnungParam = searchParams.get('rechnung') === 'true';
+  const treuhandParam = searchParams.get('treuhand') === 'true';
   
   const [documentType, setDocumentType] = useState<DocumentType>('rechnung');
   const [kaufvertragType, setKaufvertragType] = useState<string>('kaufvertrag-1-p');
@@ -72,8 +74,8 @@ const DokumenteErstellen = () => {
   const { data: autos = [] } = useAutos();
   const { data: bestellungen = [] } = useBestellungen();
 
-  const [includeRechnung, setIncludeRechnung] = useState<boolean>(false);
-  const [includeTreuhandvertrag, setIncludeTreuhandvertrag] = useState<boolean>(false);
+  const [includeRechnung, setIncludeRechnung] = useState<boolean>(includeRechnungParam);
+  const [includeTreuhandvertrag, setIncludeTreuhandvertrag] = useState<boolean>(treuhandParam);
 
   const generateRechnungPDFMutation = useGenerateRechnungPDF();
   const generateRechnungDOCXMutation = useGenerateRechnungDOCX();

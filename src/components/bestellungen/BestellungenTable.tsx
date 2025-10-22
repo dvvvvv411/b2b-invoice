@@ -49,7 +49,7 @@ export function BestellungenTable({ onEdit }: BestellungenTableProps) {
   };
 
   const handleZumGenerator = (bestellung: Bestellung) => {
-    navigate(`/admin/dokumente-erstellen?bestellung=${bestellung.id}`);
+    navigate(`/admin/dokumente-erstellen?bestellung=${bestellung.id}&rechnung=true&treuhand=true`);
   };
 
   if (isLoading) {

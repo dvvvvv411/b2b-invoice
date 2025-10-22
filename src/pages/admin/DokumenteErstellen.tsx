@@ -1361,48 +1361,6 @@ const DokumenteErstellen = () => {
             </CardContent>
           </Card>
 
-          {/* Kaufvertrag Template Selection */}
-          <Card className="glass border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-gradient-primary">Kaufvertrag-Art auswählen *</CardTitle>
-              <CardDescription>
-                Wählen Sie die Art des Kaufvertrags aus
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <RadioGroup
-                value={kaufvertragType}
-                onValueChange={setKaufvertragType}
-                className="space-y-3"
-              >
-                <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
-                  <RadioGroupItem value="kaufvertrag-1-p" id="kv-1-p" />
-                  <Label htmlFor="kv-1-p" className="cursor-pointer flex-1">
-                    1 Fahrzeug (Privat) - Kaufvertrag-1-P.docx
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
-                  <RadioGroupItem value="kaufvertrag-1-u" id="kv-1-u" />
-                  <Label htmlFor="kv-1-u" className="cursor-pointer flex-1">
-                    1 Fahrzeug (Unternehmen) - Kaufvertrag-1-U.docx
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
-                  <RadioGroupItem value="kaufvertrag-m-p" id="kv-m-p" />
-                  <Label htmlFor="kv-m-p" className="cursor-pointer flex-1">
-                    Mehrere Fahrzeuge (Privat) - Kaufvertrag-M-P.docx
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
-                  <RadioGroupItem value="kaufvertrag-m-u" id="kv-m-u" />
-                  <Label htmlFor="kv-m-u" className="cursor-pointer flex-1">
-                    Mehrere Fahrzeuge (Unternehmen) - Kaufvertrag-M-U.docx
-                  </Label>
-                </div>
-              </RadioGroup>
-            </CardContent>
-          </Card>
-
           {/* Vehicle Selection - Copy from Rechnung tab */}
           <Card className="glass border-primary/20">
             <CardHeader>
@@ -1775,6 +1733,48 @@ const DokumenteErstellen = () => {
             </Card>
           )}
 
+          {/* Kaufvertrag Template Selection */}
+          <Card className="glass border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-gradient-primary">Kaufvertrag-Art auswählen *</CardTitle>
+              <CardDescription>
+                Wählen Sie die Art des Kaufvertrags aus
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup
+                value={kaufvertragType}
+                onValueChange={setKaufvertragType}
+                className="grid grid-cols-2 gap-4"
+              >
+                <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+                  <RadioGroupItem value="kaufvertrag-1-p" id="kv-1-p" />
+                  <Label htmlFor="kv-1-p" className="cursor-pointer flex-1">
+                    1 Fahrzeug (Privat)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+                  <RadioGroupItem value="kaufvertrag-1-u" id="kv-1-u" />
+                  <Label htmlFor="kv-1-u" className="cursor-pointer flex-1">
+                    1 Fahrzeug (Unternehmen)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+                  <RadioGroupItem value="kaufvertrag-m-p" id="kv-m-p" />
+                  <Label htmlFor="kv-m-p" className="cursor-pointer flex-1">
+                    Mehrere Fahrzeuge (Privat)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+                  <RadioGroupItem value="kaufvertrag-m-u" id="kv-m-u" />
+                  <Label htmlFor="kv-m-u" className="cursor-pointer flex-1">
+                    Mehrere Fahrzeuge (Unternehmen)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </CardContent>
+          </Card>
+
           {/* Generate Buttons */}
           <Card className="glass border-accent/20">
             <CardHeader>
@@ -2016,16 +2016,16 @@ const DokumenteErstellen = () => {
                   onValueChange={(value: 'M' | 'W') => setTreuhandvertragGender(value)}
                   className="flex gap-4"
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
                     <RadioGroupItem value="M" id="gender-m" />
                     <Label htmlFor="gender-m" className="cursor-pointer">
-                      Männlich (Treuhandvertrag-M.docx)
+                      Männlich
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 p-3 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
                     <RadioGroupItem value="W" id="gender-w" />
                     <Label htmlFor="gender-w" className="cursor-pointer">
-                      Weiblich (Treuhandvertrag-W.docx)
+                      Weiblich
                     </Label>
                   </div>
                 </RadioGroup>

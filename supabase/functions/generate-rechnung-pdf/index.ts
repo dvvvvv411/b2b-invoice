@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { PDFDocument } from 'https://cdn.skypack.dev/pdf-lib@^1.17.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -53,6 +54,36 @@ const formatIBAN = (iban: string | null): string => {
   if (!iban) return '';
   const cleanIBAN = iban.replace(/\s/g, '').toUpperCase();
   return cleanIBAN.match(/.{1,4}/g)?.join(' ') || cleanIBAN;
+};
+
+// Entfernt die erste Seite aus einem PDF
+const removeFirstPage = async (pdfBuffer: ArrayBuffer): Promise<ArrayBuffer> => {
+  try {
+    // PDF laden
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    
+    // Anzahl der Seiten prüfen
+    const pageCount = pdfDoc.getPageCount();
+    console.log(`Original PDF has ${pageCount} pages`);
+    
+    // Wenn nur 1 Seite oder weniger, nichts tun
+    if (pageCount <= 1) {
+      console.log('PDF has only 1 page, returning original');
+      return pdfBuffer;
+    }
+    
+    // Erste Seite entfernen (Index 0)
+    pdfDoc.removePage(0);
+    console.log(`Removed first page, now ${pdfDoc.getPageCount()} pages remaining`);
+    
+    // PDF als Bytes zurückgeben
+    const modifiedPdfBytes = await pdfDoc.save();
+    return modifiedPdfBytes.buffer;
+  } catch (error) {
+    console.error('Error removing first page:', error);
+    // Bei Fehler: Original PDF zurückgeben
+    return pdfBuffer;
+  }
 };
 
 serve(async (req) => {
@@ -276,8 +307,13 @@ serve(async (req) => {
       );
     }
 
-    // Get binary PDF data and convert to base64
-    const pdfBuffer = await docmosisResponse.arrayBuffer();
+    // Get binary PDF data
+    let pdfBuffer = await docmosisResponse.arrayBuffer();
+
+    // Remove first page from PDF
+    pdfBuffer = await removeFirstPage(pdfBuffer);
+
+    // Convert to base64
     const base64Pdf = btoa(
       new Uint8Array(pdfBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
     );

@@ -157,8 +157,7 @@ serve(async (req) => {
 
     console.log('Treuhandvertrag DOCX generated successfully');
 
-    const genderLabel = gender === 'M' ? 'Männlich' : 'Weiblich';
-    const filename = `Treuhandvertrag ${genderLabel} ${sanitizeFilename(kunde.name)}.docx`;
+    const filename = `Treuhandvertrag ${sanitizeFilename(kunde.name)}.docx`;
 
     return new Response(
       JSON.stringify({ base64: base64Docx, filename }),

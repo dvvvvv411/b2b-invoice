@@ -157,8 +157,7 @@ serve(async (req) => {
 
     console.log('Treuhandvertrag PDF generated successfully');
 
-    const genderLabel = gender === 'M' ? 'Männlich' : 'Weiblich';
-    const filename = `Treuhandvertrag ${genderLabel} ${sanitizeFilename(kunde.name)}.pdf`;
+    const filename = `Treuhandvertrag ${sanitizeFilename(kunde.name)}.pdf`;
 
     return new Response(
       JSON.stringify({ base64: base64Pdf, filename }),

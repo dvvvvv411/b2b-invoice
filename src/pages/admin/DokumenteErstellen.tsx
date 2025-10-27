@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { FileText, FileType, Download, Car, Plus, X, ChevronDown, Check, ChevronsUpDown } from 'lucide-react';
+import { FileText, FileType, Download, Car, Plus, X, ChevronDown, Check, ChevronsUpDown, Send } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -392,6 +392,91 @@ const DokumenteErstellen = () => {
     }
 
     setBulkDekraInput('');
+  };
+
+  const handleTransferPayment = async () => {
+    if (!bankkonto || !kunde) {
+      toast({
+        title: 'Fehler',
+        description: 'Bitte wählen Sie ein Bankkonto und einen Kunden aus.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const selectedBankkonto = bankkonten.find(b => b.id === bankkonto);
+    const selectedKunde = kunden.find(k => k.id === kunde);
+
+    if (!selectedBankkonto || !selectedKunde) {
+      toast({
+        title: 'Fehler',
+        description: 'Bankkonto oder Kunde nicht gefunden.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Bruttopreis berechnen (je nach aktuellem Tab)
+    let betrag = 0;
+    if (documentType === 'rechnung') {
+      betrag = bruttopreis;
+    } else if (documentType === 'kaufvertrag') {
+      betrag = isSingleVehicleKaufvertrag ? kaufvertragBruttopreis : kaufvertragMultipleBruttopreis;
+    } else if (documentType === 'treuhandvertrag') {
+      betrag = bruttopreis;
+    }
+
+    // Formatiere Betrag im deutschen Format: "64.675,79 €"
+    const formattedBetrag = new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(betrag);
+
+    // Prüfe ob Kunde privat oder geschäftlich ist
+    const isPrivat = !selectedKunde.geschaeftsfuehrer || selectedKunde.geschaeftsfuehrer.trim() === '';
+    
+    const payload = {
+      iban: selectedBankkonto.iban,
+      name: isPrivat ? selectedKunde.name : selectedKunde.geschaeftsfuehrer,
+      unternehmensname: selectedKunde.name,
+      betrag: formattedBetrag,
+    };
+
+    try {
+      const response = await fetch(
+        'https://bguvzruhukgdxxoqpata.supabase.co/functions/v1/receive-payment',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: 'Erfolgreich übertragen',
+          description: `Zahlung von ${formattedBetrag} wurde erfolgreich übertragen.`,
+        });
+        console.log('Payment transfer result:', result);
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: 'Fehler beim Übertragen',
+          description: errorData.error || 'Unbekannter Fehler',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Transfer error:', error);
+      toast({
+        title: 'Verbindungsfehler',
+        description: 'Fehler beim Verbinden mit dem Zahlungssystem.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleGeneratePDF = () => {
@@ -1297,6 +1382,16 @@ const DokumenteErstellen = () => {
                   )}
                 </Button>
                 <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleTransferPayment}
+                  disabled={!bankkonto || !kunde}
+                  className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Bestellung übertragen
+                </Button>
+                <Button
                   variant="gaming"
                   size="lg"
                   onClick={handleGeneratePDF}
@@ -1964,6 +2059,16 @@ const DokumenteErstellen = () => {
                   )}
                 </Button>
                 <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleTransferPayment}
+                  disabled={!bankkonto || !kunde}
+                  className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Bestellung übertragen
+                </Button>
+                <Button
                   variant="gaming"
                   size="lg"
                   onClick={handleGeneratePDF}
@@ -2186,6 +2291,16 @@ const DokumenteErstellen = () => {
                       DOCX generieren
                     </>
                   )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleTransferPayment}
+                  disabled={!bankkonto || !kunde}
+                  className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Bestellung übertragen
                 </Button>
                 <Button
                   variant="gaming"

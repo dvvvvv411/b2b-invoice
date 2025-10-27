@@ -134,6 +134,16 @@ const DokumenteErstellen = () => {
     }
   }, [kanzleien, insolventeUnternehmen, speditionen, isKaufvertrag, kanzlei, insolventesUnternehmen, spedition]);
 
+  // Auto-set gender from selected bankkonto
+  useEffect(() => {
+    if (bankkonto && bankkonten.length > 0) {
+      const selectedBankkonto = bankkonten.find(b => b.id === bankkonto);
+      if (selectedBankkonto && selectedBankkonto.kontoinhaber_geschlecht) {
+        setTreuhandvertragGender(selectedBankkonto.kontoinhaber_geschlecht);
+      }
+    }
+  }, [bankkonto, bankkonten]);
+
   // Auto-fill from Bestellung when bestellungId is in URL
   useEffect(() => {
     if (bestellungId && bestellungen.length > 0 && autos.length > 0) {

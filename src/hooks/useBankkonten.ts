@@ -6,6 +6,7 @@ export interface Bankkonto {
   id: string;
   kontoname: string;
   kontoinhaber: string;
+  kontoinhaber_geschlecht: 'M' | 'W';
   iban: string;
   bic: string;
   bankname: string;
@@ -16,6 +17,7 @@ export interface Bankkonto {
 export interface BankkontoInput {
   kontoname: string;
   kontoinhaber: string;
+  kontoinhaber_geschlecht: 'M' | 'W';
   iban: string;
   bic: string;
   bankname: string;
@@ -35,7 +37,10 @@ export const useBankkonten = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Bankkonto[];
+      return (data || []).map(item => ({
+        ...item,
+        kontoinhaber_geschlecht: (item.kontoinhaber_geschlecht || 'M') as 'M' | 'W',
+      })) as Bankkonto[];
     },
   });
 };
@@ -56,7 +61,10 @@ export const useCreateBankkonto = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data ? {
+        ...data,
+        kontoinhaber_geschlecht: (data.kontoinhaber_geschlecht || 'M') as 'M' | 'W',
+      } as Bankkonto : data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bankkonten'] });
@@ -89,7 +97,10 @@ export const useUpdateBankkonto = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data ? {
+        ...data,
+        kontoinhaber_geschlecht: (data.kontoinhaber_geschlecht || 'M') as 'M' | 'W',
+      } as Bankkonto : data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bankkonten'] });

@@ -127,6 +127,7 @@ export type Database = {
           iban: string | null
           id: string
           kontoinhaber: string | null
+          kontoinhaber_geschlecht: string
           kontoname: string | null
           updated_at: string
           user_id: string
@@ -138,6 +139,7 @@ export type Database = {
           iban?: string | null
           id?: string
           kontoinhaber?: string | null
+          kontoinhaber_geschlecht?: string
           kontoname?: string | null
           updated_at?: string
           user_id: string
@@ -149,6 +151,7 @@ export type Database = {
           iban?: string | null
           id?: string
           kontoinhaber?: string | null
+          kontoinhaber_geschlecht?: string
           kontoname?: string | null
           updated_at?: string
           user_id?: string

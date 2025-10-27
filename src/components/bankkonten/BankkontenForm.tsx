@@ -19,6 +19,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Bankkonto, BankkontoInput, useCreateBankkonto, useUpdateBankkonto } from '@/hooks/useBankkonten';
 import { Loader2 } from 'lucide-react';
 import { formatIBAN, unformatIBAN } from '@/lib/formatters';
@@ -26,6 +33,9 @@ import { formatIBAN, unformatIBAN } from '@/lib/formatters';
 const bankkontoSchema = z.object({
   kontoname: z.string().min(1, 'Kontoname ist erforderlich'),
   kontoinhaber: z.string().min(1, 'Kontoinhaber ist erforderlich'),
+  kontoinhaber_geschlecht: z.enum(['M', 'W'], {
+    required_error: 'Geschlecht ist erforderlich',
+  }),
   bankname: z.string().min(1, 'Bankname ist erforderlich'),
   iban: z.string()
     .transform(unformatIBAN)
@@ -62,6 +72,7 @@ export function BankkontenForm({ open, onOpenChange, bankkonto, onSuccess }: Ban
     defaultValues: {
       kontoname: '',
       kontoinhaber: '',
+      kontoinhaber_geschlecht: 'M',
       bankname: '',
       iban: '',
       bic: '',
@@ -75,6 +86,7 @@ export function BankkontenForm({ open, onOpenChange, bankkonto, onSuccess }: Ban
       form.reset({
         kontoname: bankkonto.kontoname || '',
         kontoinhaber: bankkonto.kontoinhaber || '',
+        kontoinhaber_geschlecht: bankkonto.kontoinhaber_geschlecht || 'M',
         bankname: bankkonto.bankname || '',
         iban: formatIBAN(bankkonto.iban || ''),
         bic: bankkonto.bic || '',
@@ -84,6 +96,7 @@ export function BankkontenForm({ open, onOpenChange, bankkonto, onSuccess }: Ban
       form.reset({
         kontoname: '',
         kontoinhaber: '',
+        kontoinhaber_geschlecht: 'M',
         bankname: '',
         iban: '',
         bic: '',
@@ -104,7 +117,7 @@ export function BankkontenForm({ open, onOpenChange, bankkonto, onSuccess }: Ban
       } else {
         const newBankkonto = await createBankkonto.mutateAsync(cleanedData);
         if (onSuccess && newBankkonto) {
-          onSuccess(newBankkonto);
+          onSuccess(newBankkonto as Bankkonto);
         }
       }
       
@@ -149,11 +162,36 @@ export function BankkontenForm({ open, onOpenChange, bankkonto, onSuccess }: Ban
                 control={form.control}
                 name="kontoinhaber"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem>
                     <FormLabel>Kontoinhaber *</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Muster GmbH" />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="kontoinhaber_geschlecht"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Geschlecht *</FormLabel>
+                    <Select 
+                      value={field.value} 
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Geschlecht wählen" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-background border-primary/20 z-[100]">
+                        <SelectItem value="M">Männlich</SelectItem>
+                        <SelectItem value="W">Weiblich</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -1382,16 +1382,6 @@ const DokumenteErstellen = () => {
                   )}
                 </Button>
                 <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={handleTransferPayment}
-                  disabled={!bankkonto || !kunde}
-                  className="border-blue-500 text-blue-500 hover:bg-blue-50"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Bestellung übertragen
-                </Button>
-                <Button
                   variant="gaming"
                   size="lg"
                   onClick={handleGeneratePDF}
@@ -1408,6 +1398,16 @@ const DokumenteErstellen = () => {
                       PDF generieren
                     </>
                   )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleTransferPayment}
+                  disabled={!bankkonto || !kunde}
+                  className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Bestellung übertragen
                 </Button>
               </div>
             </CardContent>
@@ -2059,16 +2059,6 @@ const DokumenteErstellen = () => {
                   )}
                 </Button>
                 <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={handleTransferPayment}
-                  disabled={!bankkonto || !kunde}
-                  className="border-blue-500 text-blue-500 hover:bg-blue-50"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Bestellung übertragen
-                </Button>
-                <Button
                   variant="gaming"
                   size="lg"
                   onClick={handleGeneratePDF}
@@ -2085,6 +2075,16 @@ const DokumenteErstellen = () => {
                       PDF generieren
                     </>
                   )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleTransferPayment}
+                  disabled={!bankkonto || !kunde}
+                  className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Bestellung übertragen
                 </Button>
               </div>
             </CardContent>
@@ -2293,16 +2293,6 @@ const DokumenteErstellen = () => {
                   )}
                 </Button>
                 <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={handleTransferPayment}
-                  disabled={!bankkonto || !kunde}
-                  className="border-blue-500 text-blue-500 hover:bg-blue-50"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Bestellung übertragen
-                </Button>
-                <Button
                   variant="gaming"
                   size="lg"
                   onClick={handleGeneratePDF}
@@ -2319,6 +2309,16 @@ const DokumenteErstellen = () => {
                       PDF generieren
                     </>
                   )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleTransferPayment}
+                  disabled={!bankkonto || !kunde}
+                  className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Bestellung übertragen
                 </Button>
               </div>
             </CardContent>

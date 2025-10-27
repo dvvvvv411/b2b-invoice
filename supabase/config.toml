@@ -1,5 +1,8 @@
 project_id = "rjjkbnglizodcsjtqicq"
 
+[functions.create-bankkonto-api]
+verify_jwt = false
+
 [functions.generate-rechnung-pdf]
 verify_jwt = true
 

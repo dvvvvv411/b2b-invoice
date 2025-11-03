@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useCreateKunde, KundeInput } from '@/hooks/useKunden';
+import { useCreateKunde, useUpdateKunde, KundeInput } from '@/hooks/useKunden';
 import { useCreateBestellung, useUpdateBestellung, Bestellung } from '@/hooks/useBestellungen';
 import { Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -35,12 +35,13 @@ interface BestellungenFormProps {
 
 export function BestellungenForm({ open, onOpenChange, bestellung }: BestellungenFormProps) {
   const createKunde = useCreateKunde();
+  const updateKunde = useUpdateKunde();
   const createBestellung = useCreateBestellung();
   const updateBestellung = useUpdateBestellung();
   const { toast } = useToast();
   
   const isEditing = !!bestellung;
-  const isLoading = createKunde.isPending || createBestellung.isPending || updateBestellung.isPending;
+  const isLoading = createKunde.isPending || updateKunde.isPending || createBestellung.isPending || updateBestellung.isPending;
 
   const [quickAddText, setQuickAddText] = useState('');
   const [rabattAktiv, setRabattAktiv] = useState(false);
@@ -164,7 +165,21 @@ export function BestellungenForm({ open, onOpenChange, bestellung }: Bestellunge
       }
 
       if (isEditing && bestellung) {
-        // When editing, only update bestellung data (kunde stays same)
+        // Update kunde data first
+        const kundeInput: KundeInput = {
+          name: data.name,
+          adresse: data.adresse,
+          plz: data.plz,
+          stadt: data.stadt,
+          geschaeftsfuehrer: data.geschaeftsfuehrer,
+        };
+
+        await updateKunde.mutateAsync({
+          id: bestellung.kunde_id,
+          kunde: kundeInput,
+        });
+
+        // Then update bestellung
         const kundeTyp: 'privat' | 'unternehmen' = data.name === data.geschaeftsfuehrer ? 'privat' : 'unternehmen';
         
         await updateBestellung.mutateAsync({
@@ -279,7 +294,7 @@ export function BestellungenForm({ open, onOpenChange, bestellung }: Bestellunge
                     <FormItem className="md:col-span-2">
                       <FormLabel>Unternehmensname *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Beispiel GmbH" disabled={isEditing} />
+                        <Input {...field} placeholder="Beispiel GmbH" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -293,7 +308,7 @@ export function BestellungenForm({ open, onOpenChange, bestellung }: Bestellunge
                     <FormItem className="md:col-span-2">
                       <FormLabel>Adresse & Hausnummer *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Musterstraße 123" disabled={isEditing} />
+                        <Input {...field} placeholder="Musterstraße 123" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -307,7 +322,7 @@ export function BestellungenForm({ open, onOpenChange, bestellung }: Bestellunge
                     <FormItem>
                       <FormLabel>PLZ *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="12345" maxLength={5} disabled={isEditing} />
+                        <Input {...field} placeholder="12345" maxLength={5} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -321,7 +336,7 @@ export function BestellungenForm({ open, onOpenChange, bestellung }: Bestellunge
                     <FormItem>
                       <FormLabel>Stadt *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Berlin" disabled={isEditing} />
+                        <Input {...field} placeholder="Berlin" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -335,7 +350,7 @@ export function BestellungenForm({ open, onOpenChange, bestellung }: Bestellunge
                     <FormItem className="md:col-span-2">
                       <FormLabel>Geschäftsführer *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Max Mustermann" disabled={isEditing} />
+                        <Input {...field} placeholder="Max Mustermann" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

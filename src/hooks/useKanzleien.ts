@@ -17,6 +17,7 @@ export interface Kanzlei {
   register_nr: string | null;
   ust_id: string | null;
   logo_url: string | null;
+  docmosis_prefix: string | null;
   is_default: boolean;
   created_at: string;
   updated_at: string;
@@ -36,6 +37,7 @@ export interface KanzleiInput {
   register_nr: string | null;
   ust_id: string | null;
   logo_url: string | null;
+  docmosis_prefix: string | null;
   is_default?: boolean;
 }
 

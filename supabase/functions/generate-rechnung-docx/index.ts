@@ -157,6 +157,15 @@ serve(async (req) => {
     const kunde = kundeResult.data;
     const bankkonto = bankkontoResult.data;
     const insolvent = insolventResult.data;
+
+    // Helper function for template naming
+    const getTemplateName = (baseTemplate: string, prefix: string | null): string => {
+      if (!prefix || prefix.trim() === '') return baseTemplate;
+      return `${prefix.trim()}-${baseTemplate}`;
+    };
+
+    const templateName = getTemplateName('Rechnung.docx', kanzlei.docmosis_prefix);
+    console.log('Using Docmosis template:', templateName);
     
     // Use discounted autos if provided, otherwise use DB autos
     const autos = discounted_autos && discounted_autos.length > 0 ? discounted_autos : autosResult.data;
@@ -261,7 +270,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         accessKey: DOCMOSIS_API_KEY,
-        templateName: 'Rechnung.docx',
+        templateName: templateName,
         outputName: `Rechnung_${rechnungsnummer}.docx`,
         data: jsonData
       })

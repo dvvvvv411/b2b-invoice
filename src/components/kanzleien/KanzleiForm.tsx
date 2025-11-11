@@ -41,6 +41,7 @@ const kanzleiSchema = z.object({
   register_nr: z.string().optional(),
   ust_id: z.string().optional(),
   logo_url: z.string().optional(),
+  docmosis_prefix: z.string().optional(),
 });
 
 interface KanzleiFormProps {
@@ -76,6 +77,7 @@ export function KanzleiForm({ open, onOpenChange, kanzlei }: KanzleiFormProps) {
       register_nr: '',
       ust_id: '',
       logo_url: '',
+      docmosis_prefix: '',
     },
   });
 
@@ -97,6 +99,7 @@ export function KanzleiForm({ open, onOpenChange, kanzlei }: KanzleiFormProps) {
         register_nr: kanzlei.register_nr || '',
         ust_id: kanzlei.ust_id || '',
         logo_url: kanzlei.logo_url || '',
+        docmosis_prefix: kanzlei.docmosis_prefix || '',
       });
       setLogoPreview(kanzlei.logo_url);
     } else if (open && !kanzlei) {
@@ -115,6 +118,7 @@ export function KanzleiForm({ open, onOpenChange, kanzlei }: KanzleiFormProps) {
         register_nr: '',
         ust_id: '',
         logo_url: '',
+        docmosis_prefix: '',
       });
       setLogoPreview(null);
       setLogoFile(null);
@@ -400,6 +404,23 @@ export function KanzleiForm({ open, onOpenChange, kanzlei }: KanzleiFormProps) {
                     <FormControl>
                       <Input {...field} placeholder="DE123456789" />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="docmosis_prefix"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Docmosis Prefix (optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="z.B. Solle (wird vor Template-Namen gesetzt)" />
+                    </FormControl>
+                    <p className="text-sm text-muted-foreground">
+                      Wenn angegeben, wird dieser Prefix vor Docmosis-Templates gesetzt (z.B. "Solle-Rechnung.docx")
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

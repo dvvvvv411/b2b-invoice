@@ -17,6 +17,7 @@ export type Database = {
       anwaltskanzleien: {
         Row: {
           created_at: string
+          docmosis_prefix: string | null
           email: string | null
           fax: string | null
           id: string
@@ -37,6 +38,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          docmosis_prefix?: string | null
           email?: string | null
           fax?: string | null
           id?: string
@@ -57,6 +59,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          docmosis_prefix?: string | null
           email?: string | null
           fax?: string | null
           id?: string

@@ -89,6 +89,15 @@ serve(async (req) => {
     const inso = insoResult.data;
     const spedition = speditionResult.data;
 
+    // Helper function for template naming
+    const getTemplateName = (baseTemplate: string, prefix: string | null): string => {
+      if (!prefix || prefix.trim() === '') return baseTemplate;
+      return `${prefix.trim()}-${baseTemplate}`;
+    };
+
+    const finalTemplateName = getTemplateName(templateName, kanzlei.docmosis_prefix);
+    console.log('Using Docmosis template:', finalTemplateName);
+
     // Use discounted autos if provided, otherwise fetch from DB
     let autosData;
     if (discounted_autos && discounted_autos.length > 0) {
@@ -238,7 +247,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         accessKey: DOCMOSIS_API_KEY,
-        templateName: templateName,
+        templateName: finalTemplateName,
         outputName: 'kaufvertrag.docx',
         data: jsonData
       })

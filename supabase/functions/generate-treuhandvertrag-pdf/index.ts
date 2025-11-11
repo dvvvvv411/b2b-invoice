@@ -86,6 +86,16 @@ serve(async (req) => {
     const bankkonto = bankkontoResult.data;
     const inso = insoResult.data;
 
+    // Helper function for template naming
+    const getTemplateName = (baseTemplate: string, prefix: string | null): string => {
+      if (!prefix || prefix.trim() === '') return baseTemplate;
+      return `${prefix.trim()}-${baseTemplate}`;
+    };
+
+    const baseTemplate = gender === 'M' ? 'Treuhandvertrag-M.docx' : 'Treuhandvertrag-W.docx';
+    const finalTemplateName = getTemplateName(baseTemplate, kanzlei.docmosis_prefix);
+    console.log('Using Docmosis template:', finalTemplateName);
+
     // Format helpers
     const formatCurrentDate = () => {
       const now = new Date();
@@ -127,8 +137,6 @@ serve(async (req) => {
       throw new Error('DOCMOSIS_API_KEY is not configured');
     }
 
-    const templateName = gender === 'M' ? 'Treuhandvertrag-M.docx' : 'Treuhandvertrag-W.docx';
-
     const docmosisResponse = await fetch('https://eu1.dws4.docmosis.com/api/render', {
       method: 'POST',
       headers: {
@@ -136,7 +144,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         accessKey: DOCMOSIS_API_KEY,
-        templateName: templateName,
+        templateName: finalTemplateName,
         outputName: 'treuhandvertrag.pdf',
         data: jsonData
       })

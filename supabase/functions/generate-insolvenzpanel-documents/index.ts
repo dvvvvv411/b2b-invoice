@@ -107,7 +107,17 @@ serve(async (req) => {
       rabatt_aktiv
     } = await req.json();
 
-    console.log('Insolvenzpanel request:', { format, insolventes_unternehmen_name, kanzlei_name, dekra_nummern });
+    console.log('Insolvenzpanel request:', { 
+      format, 
+      insolventes_unternehmen_name, 
+      kanzlei_name, 
+      dekra_nummern,
+      bankkonto_vollstaendig: {
+        iban: bankkonto?.iban,
+        kontoinhaber: bankkonto?.kontoinhaber,
+        geschlecht: bankkonto?.kontoinhaber_geschlecht
+      }
+    });
 
     // Validate input
     if (!format || !kunde || !bankkonto || !insolventes_unternehmen_name || !kanzlei_name || !dekra_nummern || dekra_nummern.length === 0) {
@@ -368,10 +378,10 @@ serve(async (req) => {
       kanzlei_register: kanzlei.register_nr,
       kanzlei_ustid: kanzlei.ust_id,
       kanzlei_anwalt: kanzlei.rechtsanwalt,
-      iban: formatIBAN(foundBankkonto.iban),
-      bic: foundBankkonto.bic,
-      bank: foundBankkonto.bankname,
-      kontoinhaber: foundBankkonto.kontoinhaber,
+      iban: formatIBAN(bankkonto.iban),
+      bic: bankkonto.bic,
+      bank: bankkonto.bankname,
+      kontoinhaber: bankkonto.kontoinhaber,
       kunde_unternehmen: kunde.unternehmensname,
       kunde_strasse: `${kunde.adresse} ${kunde.hausnummer}`,
       kunde_plzstadt: `${kunde.plz} ${kunde.stadt}`,

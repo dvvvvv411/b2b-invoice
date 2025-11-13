@@ -197,7 +197,7 @@ serve(async (req) => {
     // Determine template
     const anzahl = autos.length > 1 ? 'M' : '1';
     const typ = kundeTyp === 'privat' ? 'P' : 'U';
-    const kaufvertragBaseTemplate = `Kaufvertrag-${anzahl}-${typ}.${format === 'pdf' ? 'pdf' : 'docx'}`;
+    const kaufvertragBaseTemplate = `Kaufvertrag-${anzahl}-${typ}.docx`;
 
     // Apply discount if active
     let autosData = autos;
@@ -323,7 +323,7 @@ serve(async (req) => {
     };
 
     // Prepare Treuhandvertrag data
-    const treuhandBaseTemplate = `Treuhandvertrag-${bankkonto.kontoinhaber_geschlecht}.${format === 'pdf' ? 'pdf' : 'docx'}`;
+    const treuhandBaseTemplate = `Treuhandvertrag-${bankkonto.kontoinhaber_geschlecht}.docx`;
     const treuhandData = {
       kanzlei_name: kanzlei.name,
       kanzlei_strasse: kanzlei.strasse,
@@ -353,7 +353,7 @@ serve(async (req) => {
     };
 
     // Determine template names
-    const rechnungTemplate = getTemplateName(`Rechnung.${format === 'pdf' ? 'pdf' : 'docx'}`, kanzlei.docmosis_prefix);
+    const rechnungTemplate = getTemplateName('Rechnung.docx', kanzlei.docmosis_prefix);
     const kaufvertragTemplate = getTemplateName(kaufvertragBaseTemplate, kanzlei.docmosis_prefix);
     const treuhandTemplate = getTemplateName(treuhandBaseTemplate, kanzlei.docmosis_prefix);
 

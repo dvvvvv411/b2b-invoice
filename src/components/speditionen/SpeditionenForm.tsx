@@ -20,7 +20,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Spedition, SpeditionInput, useCreateSpedition, useUpdateSpedition } from '@/hooks/useSpeditionen';
+import { useInsolventeUnternehmen } from '@/hooks/useInsolventeUnternehmen';
 import { Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const speditionSchema = z.object({
   name: z.string().min(1, 'Unternehmensname ist erforderlich'),
@@ -28,6 +30,7 @@ const speditionSchema = z.object({
   plz_stadt: z.string()
     .min(1, 'PLZ und Stadt sind erforderlich')
     .regex(/^\d{5}\s+.+$/, 'Format: PLZ (5 Ziffern) Leerzeichen Stadt (z.B. "12345 Berlin")'),
+  insolventes_unternehmen_id: z.string().optional(),
 });
 
 interface SpeditionenFormProps {
@@ -39,6 +42,7 @@ interface SpeditionenFormProps {
 export function SpeditionenForm({ open, onOpenChange, spedition }: SpeditionenFormProps) {
   const createSpedition = useCreateSpedition();
   const updateSpedition = useUpdateSpedition();
+  const { data: insolventeUnternehmen = [] } = useInsolventeUnternehmen();
   
   const isEditing = !!spedition;
   const isLoading = createSpedition.isPending || updateSpedition.isPending;
@@ -49,6 +53,7 @@ export function SpeditionenForm({ open, onOpenChange, spedition }: SpeditionenFo
       name: '',
       strasse: '',
       plz_stadt: '',
+      insolventes_unternehmen_id: undefined,
     },
   });
 
@@ -60,6 +65,7 @@ export function SpeditionenForm({ open, onOpenChange, spedition }: SpeditionenFo
         name: spedition.name || '',
         strasse: spedition.strasse || '',
         plz_stadt: spedition.plz_stadt || '',
+        insolventes_unternehmen_id: spedition.insolventes_unternehmen_id || undefined,
       });
     } else if (open && !spedition) {
       // Creating new spedition - reset to empty values
@@ -67,6 +73,7 @@ export function SpeditionenForm({ open, onOpenChange, spedition }: SpeditionenFo
         name: '',
         strasse: '',
         plz_stadt: '',
+        insolventes_unternehmen_id: undefined,
       });
     }
   }, [open, spedition, form]);
@@ -139,6 +146,31 @@ export function SpeditionenForm({ open, onOpenChange, spedition }: SpeditionenFo
                     <FormControl>
                       <Input {...field} placeholder="12345 Berlin" />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="insolventes_unternehmen_id"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Insolventes Unternehmen (für Insolvenzpanel)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Optional: Insolventes Unternehmen auswählen" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {insolventeUnternehmen.map((unternehmen) => (
+                          <SelectItem key={unternehmen.id} value={unternehmen.id}>
+                            {unternehmen.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

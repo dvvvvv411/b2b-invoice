@@ -8,6 +8,7 @@ export interface Spedition {
   strasse: string;
   plz_stadt: string;
   is_default: boolean;
+  insolventes_unternehmen_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -17,6 +18,7 @@ export interface SpeditionInput {
   strasse: string;
   plz_stadt: string;
   is_default?: boolean;
+  insolventes_unternehmen_id?: string;
 }
 
 export const useSpeditionen = () => {
@@ -33,7 +35,7 @@ export const useSpeditionen = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Spedition[];
+      return data as any as Spedition[];
     },
   });
 };

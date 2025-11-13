@@ -381,7 +381,7 @@ serve(async (req) => {
       iban: formatIBAN(bankkonto.iban),
       bic: bankkonto.bic,
       bank: bankkonto.bankname,
-      kontoinhaber: bankkonto.kontoinhaber,
+      kontoname: bankkonto.kontoinhaber,
       kunde_unternehmen: kunde.unternehmensname,
       kunde_strasse: `${kunde.adresse} ${kunde.hausnummer}`,
       kunde_plzstadt: `${kunde.plz} ${kunde.stadt}`,

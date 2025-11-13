@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { PDFDocument } from 'https://esm.sh/pdf-lib@1.17.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -57,6 +58,36 @@ const getTemplateName = (baseTemplate: string, prefix: string | null): string =>
 
 const sanitizeFilename = (name: string): string => {
   return name.replace(/[<>:"/\\|?*]/g, '_').trim();
+};
+
+// Entfernt die erste Seite aus einem PDF
+const removeFirstPage = async (pdfBuffer: ArrayBuffer): Promise<ArrayBuffer> => {
+  try {
+    // PDF laden
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    
+    // Anzahl der Seiten prüfen
+    const pageCount = pdfDoc.getPageCount();
+    console.log(`Original PDF has ${pageCount} pages`);
+    
+    // Wenn nur 1 Seite oder weniger, nichts tun
+    if (pageCount <= 1) {
+      console.log('PDF has only 1 page, returning original');
+      return pdfBuffer;
+    }
+    
+    // Erste Seite entfernen (Index 0)
+    pdfDoc.removePage(0);
+    console.log(`Removed first page, now ${pdfDoc.getPageCount()} pages remaining`);
+    
+    // PDF als Bytes zurückgeben
+    const modifiedPdfBytes = await pdfDoc.save();
+    return modifiedPdfBytes.buffer;
+  } catch (error) {
+    console.error('Error removing first page:', error);
+    // Bei Fehler: Original PDF zurückgeben
+    return pdfBuffer;
+  }
 };
 
 serve(async (req) => {
@@ -445,11 +476,17 @@ serve(async (req) => {
     console.log('All documents generated, converting to Base64...');
 
     // Convert all to Base64
-    const [rechnungBuffer, kaufvertragBuffer, treuhandBuffer] = await Promise.all([
+    let [rechnungBuffer, kaufvertragBuffer, treuhandBuffer] = await Promise.all([
       rechnungResponse.arrayBuffer(),
       kaufvertragResponse.arrayBuffer(),
       treuhandResponse.arrayBuffer()
     ]);
+
+    // Remove first page from Rechnung if format is PDF
+    if (format === 'pdf') {
+      console.log('Removing first page from Rechnung PDF...');
+      rechnungBuffer = await removeFirstPage(rechnungBuffer);
+    }
 
     const toBase64 = (buffer: ArrayBuffer) => {
       return btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));

@@ -99,10 +99,10 @@ serve(async (req) => {
       auth: { persistSession: false }
     });
 
-    // Find entities (GLOBAL, no user_id filter)
+    // Find entities (GLOBAL, no user_id filter) - using partial match
     const [insolventResult, kanzleiResult] = await Promise.all([
-      supabase.from('insolvente_unternehmen').select('*').ilike('name', insolventes_unternehmen_name).limit(1).single(),
-      supabase.from('anwaltskanzleien').select('*').ilike('name', kanzlei_name).limit(1).single()
+      supabase.from('insolvente_unternehmen').select('*').ilike('name', `%${insolventes_unternehmen_name}%`).limit(1).single(),
+      supabase.from('anwaltskanzleien').select('*').ilike('name', `%${kanzlei_name}%`).limit(1).single()
     ]);
 
     if (insolventResult.error || !insolventResult.data) {

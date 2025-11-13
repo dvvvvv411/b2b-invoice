@@ -4,12 +4,10 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface Spedition {
   id: string;
-  user_id: string;
   name: string;
   strasse: string;
   plz_stadt: string;
   is_default: boolean;
-  insolventes_unternehmen_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -19,7 +17,6 @@ export interface SpeditionInput {
   strasse: string;
   plz_stadt: string;
   is_default?: boolean;
-  insolventes_unternehmen_id?: string | null;
 }
 
 export const useSpeditionen = () => {

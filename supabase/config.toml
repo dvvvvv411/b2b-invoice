@@ -26,6 +26,3 @@ verify_jwt = true
 
 [functions.create-bestellung-api]
 verify_jwt = false
-
-[functions.generate-documents-for-insolvenzpanel]
-verify_jwt = false

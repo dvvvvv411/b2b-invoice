@@ -380,6 +380,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          insolventes_unternehmen_id: string | null
           is_default: boolean | null
           name: string
           plz_stadt: string | null
@@ -390,6 +391,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          insolventes_unternehmen_id?: string | null
           is_default?: boolean | null
           name: string
           plz_stadt?: string | null
@@ -400,6 +402,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          insolventes_unternehmen_id?: string | null
           is_default?: boolean | null
           name?: string
           plz_stadt?: string | null
@@ -407,7 +410,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "speditionen_insolventes_unternehmen_id_fkey"
+            columns: ["insolventes_unternehmen_id"]
+            isOneToOne: false
+            referencedRelation: "insolvente_unternehmen"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

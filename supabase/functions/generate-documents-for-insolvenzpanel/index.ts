@@ -1,78 +1,9 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-// Common formatting functions
-const formatters = {
-  price: (amount: number | null | undefined): string => {
-    if (amount === null || amount === undefined) return '0,00';
-    return amount.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  },
-  kilometer: (km: number | null | undefined): string => {
-    if (km === null || km === undefined) return '0';
-    return km.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  },
-  erstzulassung: (date: string | Date | null | undefined): string => {
-    if (!date) return '';
-    const d = new Date(date);
-    return `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-  },
-  datum: (date: Date | string | null | undefined): string => {
-    if (!date) return '';
-    const d = new Date(date);
-    return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
-  },
-  iban: (iban: string | null | undefined): string => {
-    if (!iban) return '';
-    return iban.replace(/(.{4})/g, '$1 ').trim();
-  }
-};
-
-const prepareAutosData = (autos: any[], rabatt: any) => {
-  const autosData = autos.map((auto, index) => {
-    const einzelpreisNetto = auto.einzelpreis_netto || 0;
-    const rabattProzent = rabatt?.aktiv ? (rabatt.prozent || 0) : 0;
-    const einzelpreisNettoNachRabatt = einzelpreisNetto * (1 - rabattProzent / 100);
-
-    return {
-      POSITION: index + 1,
-      MARKE: auto.marke || '',
-      MODELL: auto.modell || '',
-      FAHRGESTELLNUMMER: auto.fahrgestell_nr || '',
-      DEKRA: auto.dekra_bericht_nr || '',
-      ERSTZULASSUNG: formatters.erstzulassung(auto.erstzulassung),
-      KILOMETERSTAND: formatters.kilometer(auto.kilometer),
-      EINZELPREIS_NETTO: formatters.price(einzelpreisNetto),
-      EINZELPREIS_NETTO_NACH_RABATT: formatters.price(einzelpreisNettoNachRabatt),
-    };
-  });
-
-  const gesamtpreisNetto = autosData.reduce((sum, auto) => {
-    return sum + parseFloat(auto.EINZELPREIS_NETTO_NACH_RABATT.replace(/\./g, '').replace(',', '.'));
-  }, 0);
-
-  return { autosData, gesamtpreisNetto };
-};
-
-const callDocmosis = async (template: string, data: any) => {
-  const response = await fetch('https://eu1.docmosis.com/api/render', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      accessKey: Deno.env.get('DOCMOSIS_API_KEY'),
-      templateName: template,
-      outputName: 'output',
-      data,
-    }),
-  });
-
-  if (!response.ok) throw new Error(`Docmosis API Error: ${response.statusText}`);
-  return await response.arrayBuffer();
 };
 
 serve(async (req) => {
@@ -85,6 +16,7 @@ serve(async (req) => {
     
     console.log('📥 Request:', { kunde: input.kunde?.name, format: input.format });
 
+    // Validate
     if (!input.kunde || !input.bankkonto || !input.insolventes_unternehmen_name || 
         !input.kanzlei_name || !input.dekra_nummern || !input.format || !input.kontoinhaber_geschlecht) {
       throw new Error('Fehlende erforderliche Felder');
@@ -94,30 +26,22 @@ serve(async (req) => {
       throw new Error('Format muss PDF oder DOCX sein');
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
 
     // Find entities
-    const { data: insolventesUnternehmen } = await supabase
-      .from('insolvente_unternehmen')
-      .select('*')
-      .ilike('name', input.insolventes_unternehmen_name)
-      .limit(1)
-      .maybeSingle();
+    const [
+      { data: insolventesUnternehmen },
+      { data: kanzlei }
+    ] = await Promise.all([
+      supabase.from('insolvente_unternehmen').select('*').ilike('name', input.insolventes_unternehmen_name).limit(1).maybeSingle(),
+      supabase.from('anwaltskanzleien').select('*').ilike('name', input.kanzlei_name).limit(1).maybeSingle()
+    ]);
 
-    if (!insolventesUnternehmen) {
-      throw new Error(`Insolventes Unternehmen "${input.insolventes_unternehmen_name}" nicht gefunden`);
-    }
-
-    const { data: kanzlei } = await supabase
-      .from('anwaltskanzleien')
-      .select('*')
-      .ilike('name', input.kanzlei_name)
-      .limit(1)
-      .maybeSingle();
-
-    if (!kanzlei) throw new Error(`Kanzlei "${input.kanzlei_name}" nicht gefunden`);
+    if (!insolventesUnternehmen) throw new Error(`Insolventes Unternehmen nicht gefunden`);
+    if (!kanzlei) throw new Error(`Kanzlei nicht gefunden`);
 
     const { data: spedition } = await supabase
       .from('speditionen')
@@ -126,23 +50,18 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    if (!spedition) {
-      throw new Error(`Keine Spedition für "${insolventesUnternehmen.name}" verknüpft`);
-    }
+    if (!spedition) throw new Error(`Keine Spedition verknüpft`);
 
     // Find or create Bankkonto
-    const { data: existingBankkonto } = await supabase
+    let { data: bankkonto } = await supabase
       .from('bankkonten')
       .select('*')
       .eq('iban', input.bankkonto.iban)
       .limit(1)
       .maybeSingle();
 
-    let bankkonto;
-    if (existingBankkonto) {
-      bankkonto = existingBankkonto;
-    } else {
-      const { data: newBankkonto, error: bankkontoError } = await supabase
+    if (!bankkonto) {
+      const { data: newBankkonto, error } = await supabase
         .from('bankkonten')
         .insert({
           user_id: insolventesUnternehmen.user_id,
@@ -156,7 +75,7 @@ serve(async (req) => {
         .select()
         .single();
 
-      if (bankkontoError) throw new Error(`Bankkonto Fehler: ${bankkontoError.message}`);
+      if (error) throw new Error(`Bankkonto Fehler: ${error.message}`);
       bankkonto = newBankkonto;
     }
 
@@ -169,24 +88,7 @@ serve(async (req) => {
     const missingDekra = input.dekra_nummern.filter(d => 
       !autos.some(a => a.dekra_bericht_nr === d)
     );
-
-    if (missingDekra.length > 0) {
-      throw new Error(`DEKRA-Nummern nicht gefunden: ${missingDekra.join(', ')}`);
-    }
-
-    // Determine templates
-    const kundeTyp = input.kunde.name.trim() === input.kunde.geschaeftsfuehrer.trim() ? 'privat' : 'unternehmen';
-    const getTemplate = (base: string) => kanzlei.docmosis_prefix ? `${kanzlei.docmosis_prefix}-${base}` : base;
-    
-    const kaufvertragBase = kundeTyp === 'privat' 
-      ? (autos.length === 1 ? 'Kaufvertrag-1-P.docx' : 'Kaufvertrag-M-P.docx')
-      : (autos.length === 1 ? 'Kaufvertrag-1-U.docx' : 'Kaufvertrag-M-U.docx');
-
-    const templates = {
-      rechnung: getTemplate('Rechnung.docx'),
-      kaufvertrag: getTemplate(kaufvertragBase),
-      treuhandvertrag: getTemplate(input.kontoinhaber_geschlecht === 'M' ? 'Treuhandvertrag-M.docx' : 'Treuhandvertrag-W.docx'),
-    };
+    if (missingDekra.length > 0) throw new Error(`DEKRA nicht gefunden: ${missingDekra.join(', ')}`);
 
     // Generate Rechnungsnummer
     const { data: existingRn } = await supabase
@@ -205,10 +107,57 @@ serve(async (req) => {
       rechnungsnummer = '023976';
     }
 
-    // Prepare common data
-    const { autosData, gesamtpreisNetto } = prepareAutosData(autos, input.rabatt);
-    const commonData = {
-      DATUM: formatters.datum(new Date()),
+    // Calculate prices
+    const autosData = autos.map((auto, i) => {
+      const netto = auto.einzelpreis_netto || 0;
+      const rabatt = input.rabatt?.aktiv ? (input.rabatt.prozent || 0) : 0;
+      const nachRabatt = netto * (1 - rabatt / 100);
+      const formatPrice = (n: number) => n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      const formatKm = (km: number) => km ? km.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '0';
+      const formatEz = (d: any) => {
+        if (!d) return '';
+        const date = new Date(d);
+        return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+      };
+
+      return {
+        POSITION: i + 1,
+        MARKE: auto.marke || '',
+        MODELL: auto.modell || '',
+        FAHRGESTELLNUMMER: auto.fahrgestell_nr || '',
+        DEKRA: auto.dekra_bericht_nr || '',
+        ERSTZULASSUNG: formatEz(auto.erstzulassung),
+        KILOMETERSTAND: formatKm(auto.kilometer),
+        EINZELPREIS_NETTO: formatPrice(netto),
+        EINZELPREIS_NETTO_NACH_RABATT: formatPrice(nachRabatt),
+      };
+    });
+
+    const gesamtNetto = autosData.reduce((s, a) => 
+      s + parseFloat(a.EINZELPREIS_NETTO_NACH_RABATT.replace(/\./g, '').replace(',', '.')), 0
+    );
+
+    // Helper functions
+    const formatPrice = (n: number) => n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const formatDate = (d: Date) => {
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      return `${day}.${month}.${d.getFullYear()}`;
+    };
+    const formatIban = (iban: string) => iban ? iban.replace(/(.{4})/g, '$1 ').trim() : '';
+
+    // Templates
+    const kundeTyp = input.kunde.name.trim() === input.kunde.geschaeftsfuehrer.trim() ? 'privat' : 'unternehmen';
+    const prefix = kanzlei.docmosis_prefix || '';
+    const getT = (base: string) => prefix ? `${prefix}-${base}` : base;
+    
+    const kaufBase = kundeTyp === 'privat' 
+      ? (autos.length === 1 ? 'Kaufvertrag-1-P.docx' : 'Kaufvertrag-M-P.docx')
+      : (autos.length === 1 ? 'Kaufvertrag-1-U.docx' : 'Kaufvertrag-M-U.docx');
+
+    // Common data
+    const common = {
+      DATUM: formatDate(new Date()),
       KANZLEI_NAME: kanzlei.name || '',
       KANZLEI_STRASSE: kanzlei.strasse || '',
       KANZLEI_PLZ: kanzlei.plz || '',
@@ -229,7 +178,7 @@ serve(async (req) => {
       INSOLVENTES_UNTERNEHMEN_AMTSGERICHT: insolventesUnternehmen.amtsgericht || '',
       INSOLVENTES_UNTERNEHMEN_AKTENZEICHEN: insolventesUnternehmen.aktenzeichen || '',
       BANKKONTO_KONTOINHABER: bankkonto.kontoinhaber || '',
-      BANKKONTO_IBAN: formatters.iban(bankkonto.iban),
+      BANKKONTO_IBAN: formatIban(bankkonto.iban),
       BANKKONTO_BIC: bankkonto.bic || '',
       BANKKONTO_BANKNAME: bankkonto.bankname || '',
       AUTOS: autosData,
@@ -237,53 +186,69 @@ serve(async (req) => {
       RABATT_AKTIV: input.rabatt?.aktiv || false,
     };
 
-    console.log('📝 Generiere Dokumente...');
-
-    // Generate Rechnung
-    const mwstBetrag = gesamtpreisNetto * 0.19;
-    const rechnungData = {
-      ...commonData,
-      RECHNUNGSNUMMER: rechnungsnummer,
-      RECHNUNGSDATUM: formatters.datum(new Date()),
-      GESAMTPREIS_NETTO: formatters.price(gesamtpreisNetto),
-      MWST_BETRAG: formatters.price(mwstBetrag),
-      GESAMTPREIS_BRUTTO: formatters.price(gesamtpreisNetto + mwstBetrag),
+    // Call Docmosis
+    const callDoc = async (template: string, data: any) => {
+      const res = await fetch('https://eu1.docmosis.com/api/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessKey: Deno.env.get('DOCMOSIS_API_KEY'),
+          templateName: template,
+          outputName: 'output',
+          data,
+        }),
+      });
+      if (!res.ok) throw new Error(`Docmosis Error: ${res.statusText}`);
+      return await res.arrayBuffer();
     };
 
-    let rechnungBuffer = await callDocmosis(templates.rechnung, rechnungData);
-    if (input.format === 'PDF') {
-      const { PDFDocument } = await import('https://esm.sh/pdf-lib@1.17.1');
-      const pdf = await PDFDocument.load(rechnungBuffer);
-      if (pdf.getPageCount() > 1) pdf.removePage(0);
-      rechnungBuffer = await pdf.save();
-    }
+    console.log('📝 Generiere Dokumente...');
 
-    // Generate Kaufvertrag
-    const { data: amountWords } = await supabase.functions.invoke('amount-to-words', {
-      body: { amount: Math.round(gesamtpreisNetto) },
+    // Rechnung
+    const mwst = gesamtNetto * 0.19;
+    let rechnungBuf = await callDoc(getT('Rechnung.docx'), {
+      ...common,
+      RECHNUNGSNUMMER: rechnungsnummer,
+      RECHNUNGSDATUM: formatDate(new Date()),
+      GESAMTPREIS_NETTO: formatPrice(gesamtNetto),
+      MWST_BETRAG: formatPrice(mwst),
+      GESAMTPREIS_BRUTTO: formatPrice(gesamtNetto + mwst),
     });
 
-    const kaufvertragData = {
-      ...commonData,
+    if (input.format === 'PDF') {
+      const { PDFDocument } = await import('https://esm.sh/pdf-lib@1.17.1');
+      const pdf = await PDFDocument.load(rechnungBuf);
+      if (pdf.getPageCount() > 1) pdf.removePage(0);
+      rechnungBuf = await pdf.save();
+    }
+
+    // Kaufvertrag
+    const { data: amountWords } = await supabase.functions.invoke('amount-to-words', {
+      body: { amount: Math.round(gesamtNetto) },
+    });
+
+    const kaufBuf = await callDoc(getT(kaufBase), {
+      ...common,
       KUNDE_GESCHAEFTSFUEHRER: input.kunde.geschaeftsfuehrer || '',
       INSOLVENTES_UNTERNEHMEN_HANDELSREGISTER: insolventesUnternehmen.handelsregister || '',
       INSOLVENTES_UNTERNEHMEN_ADRESSE: insolventesUnternehmen.adresse || '',
       SPEDITION_NAME: spedition.name || '',
       SPEDITION_STRASSE: spedition.strasse || '',
       SPEDITION_PLZ_STADT: spedition.plz_stadt || '',
-      GESAMTPREIS_NETTO: formatters.price(gesamtpreisNetto),
+      GESAMTPREIS_NETTO: formatPrice(gesamtNetto),
       GESAMTPREIS_IN_WORTEN: amountWords?.words || '',
-    };
+    });
 
-    const kaufvertragBuffer = await callDocmosis(templates.kaufvertrag, kaufvertragData);
+    // Treuhandvertrag
+    const treuBuf = await callDoc(
+      getT(input.kontoinhaber_geschlecht === 'M' ? 'Treuhandvertrag-M.docx' : 'Treuhandvertrag-W.docx'),
+      common
+    );
 
-    // Generate Treuhandvertrag
-    const treuhandvertragBuffer = await callDocmosis(templates.treuhandvertrag, commonData);
-
-    // Prepare response
-    const toBase64 = (buffer: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    // Response
+    const toB64 = (buf: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(buf)));
     const ext = input.format === 'PDF' ? 'pdf' : 'docx';
-    const sanitize = (name: string) => name.replace(/[^a-zA-Z0-9\s]/g, '');
+    const clean = (s: string) => s.replace(/[^a-zA-Z0-9\s]/g, '');
 
     return new Response(
       JSON.stringify({
@@ -291,17 +256,17 @@ serve(async (req) => {
         format: input.format,
         documents: {
           rechnung: {
-            base64: toBase64(rechnungBuffer),
+            base64: toB64(rechnungBuf),
             filename: `Rechnung_${rechnungsnummer}.${ext}`,
             rechnungsnummer,
           },
           kaufvertrag: {
-            base64: toBase64(kaufvertragBuffer),
-            filename: `Kaufvertrag ${sanitize(input.kunde.geschaeftsfuehrer || 'Kunde')}.${ext}`,
+            base64: toB64(kaufBuf),
+            filename: `Kaufvertrag ${clean(input.kunde.geschaeftsfuehrer || 'Kunde')}.${ext}`,
           },
           treuhandvertrag: {
-            base64: toBase64(treuhandvertragBuffer),
-            filename: `Treuhandvertrag ${sanitize(input.kunde.name || 'Kunde')}.${ext}`,
+            base64: toB64(treuBuf),
+            filename: `Treuhandvertrag ${clean(input.kunde.name || 'Kunde')}.${ext}`,
           },
         },
       }),

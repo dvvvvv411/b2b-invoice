@@ -498,6 +498,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
+        rechnungsnummer: rechnungsnummer,
         rechnung: {
           base64: toBase64(rechnungBuffer),
           filename: `Rechnung_${rechnungsnummer}.${suffix}`

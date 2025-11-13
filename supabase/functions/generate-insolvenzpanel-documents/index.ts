@@ -352,6 +352,19 @@ serve(async (req) => {
       nettopreis: formatPrice(nettopreis)
     };
 
+    // Determine template names
+    const rechnungTemplate = getTemplateName(`Rechnung.${format === 'pdf' ? 'pdf' : 'docx'}`, kanzlei.docmosis_prefix);
+    const kaufvertragTemplate = getTemplateName(kaufvertragBaseTemplate, kanzlei.docmosis_prefix);
+    const treuhandTemplate = getTemplateName(treuhandBaseTemplate, kanzlei.docmosis_prefix);
+
+    console.log('=== DOCMOSIS TEMPLATE DEBUG ===');
+    console.log('Kanzlei docmosis_prefix:', kanzlei.docmosis_prefix);
+    console.log('Template names being sent to Docmosis:');
+    console.log('  - Rechnung:', rechnungTemplate);
+    console.log('  - Kaufvertrag:', kaufvertragTemplate);
+    console.log('  - Treuhandvertrag:', treuhandTemplate);
+    console.log('===============================');
+
     console.log('Generating 3 documents in parallel...');
 
     // Call Docmosis 3 times in parallel
@@ -361,7 +374,7 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           accessKey: DOCMOSIS_API_KEY,
-          templateName: getTemplateName(`Rechnung.${format === 'pdf' ? 'pdf' : 'docx'}`, kanzlei.docmosis_prefix),
+          templateName: rechnungTemplate,
           outputName: `Rechnung_${rechnungsnummer}.${format === 'pdf' ? 'pdf' : 'docx'}`,
           data: rechnungData
         })
@@ -371,7 +384,7 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           accessKey: DOCMOSIS_API_KEY,
-          templateName: getTemplateName(kaufvertragBaseTemplate, kanzlei.docmosis_prefix),
+          templateName: kaufvertragTemplate,
           outputName: `Kaufvertrag ${sanitizeFilename(kunde.unternehmensname)}.${format === 'pdf' ? 'pdf' : 'docx'}`,
           data: kaufvertragData
         })
@@ -381,7 +394,7 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           accessKey: DOCMOSIS_API_KEY,
-          templateName: getTemplateName(treuhandBaseTemplate, kanzlei.docmosis_prefix),
+          templateName: treuhandTemplate,
           outputName: `Treuhandvertrag ${sanitizeFilename(kunde.unternehmensname)}.${format === 'pdf' ? 'pdf' : 'docx'}`,
           data: treuhandData
         })
@@ -390,9 +403,37 @@ serve(async (req) => {
 
     if (!rechnungResponse.ok || !kaufvertragResponse.ok || !treuhandResponse.ok) {
       const errors = [];
-      if (!rechnungResponse.ok) errors.push(`Rechnung: ${rechnungResponse.status}`);
-      if (!kaufvertragResponse.ok) errors.push(`Kaufvertrag: ${kaufvertragResponse.status}`);
-      if (!treuhandResponse.ok) errors.push(`Treuhandvertrag: ${treuhandResponse.status}`);
+      
+      // Log detailed error responses
+      if (!rechnungResponse.ok) {
+        const errorText = await rechnungResponse.text();
+        console.error('❌ Rechnung Docmosis error:', {
+          status: rechnungResponse.status,
+          template: rechnungTemplate,
+          response: errorText
+        });
+        errors.push(`Rechnung: ${rechnungResponse.status}`);
+      }
+      
+      if (!kaufvertragResponse.ok) {
+        const errorText = await kaufvertragResponse.text();
+        console.error('❌ Kaufvertrag Docmosis error:', {
+          status: kaufvertragResponse.status,
+          template: kaufvertragTemplate,
+          response: errorText
+        });
+        errors.push(`Kaufvertrag: ${kaufvertragResponse.status}`);
+      }
+      
+      if (!treuhandResponse.ok) {
+        const errorText = await treuhandResponse.text();
+        console.error('❌ Treuhandvertrag Docmosis error:', {
+          status: treuhandResponse.status,
+          template: treuhandTemplate,
+          response: errorText
+        });
+        errors.push(`Treuhandvertrag: ${treuhandResponse.status}`);
+      }
       
       console.error('Docmosis errors:', errors);
       return new Response(

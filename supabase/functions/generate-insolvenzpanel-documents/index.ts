@@ -364,7 +364,13 @@ serve(async (req) => {
     };
 
     // Prepare Treuhandvertrag data
-    const treuhandBaseTemplate = `Treuhandvertrag-${bankkonto.kontoinhaber_geschlecht}.docx`;
+    const geschlecht = bankkonto.kontoinhaber_geschlecht?.toUpperCase() || 'M';
+    const treuhandBaseTemplate = `Treuhandvertrag-${geschlecht}.docx`;
+    console.log('Treuhandvertrag Geschlecht Debug:', {
+      original: bankkonto.kontoinhaber_geschlecht,
+      normalized: geschlecht,
+      baseTemplate: treuhandBaseTemplate
+    });
     const treuhandData = {
       kanzlei_name: kanzlei.name,
       kanzlei_strasse: kanzlei.strasse,

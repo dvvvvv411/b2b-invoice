@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FileText, FileType, Download, Car, Plus, X, ChevronDown, Check, ChevronsUpDown, Send } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -63,6 +63,7 @@ const DokumenteErstellen = () => {
   const [isBankkontenFormOpen, setIsBankkontenFormOpen] = useState<boolean>(false);
   const [autoSearchQuery, setAutoSearchQuery] = useState<string>('');
   const [kundeComboboxOpen, setKundeComboboxOpen] = useState<boolean>(false);
+  const processedBestellungRef = useRef<string | null>(null);
 
   const { toast } = useToast();
 
@@ -146,65 +147,73 @@ const DokumenteErstellen = () => {
 
   // Auto-fill from Bestellung when bestellungId is in URL
   useEffect(() => {
-    if (bestellungId && bestellungen.length > 0 && autos.length > 0) {
-      const bestellung = bestellungen.find(b => b.id === bestellungId);
-      if (!bestellung) return;
+    // Guard: nur einmal pro bestellungId ausführen
+    if (!bestellungId || processedBestellungRef.current === bestellungId) return;
+    if (bestellungen.length === 0 || autos.length === 0) return;
 
-      // 1. Set default Kanzlei, Spedition, Insolventes Unternehmen
-      const defaultKanzlei = kanzleien.find(k => k.is_default);
-      const defaultSpedition = speditionen.find(s => s.is_default);
-      const defaultInsUnternehmen = insolventeUnternehmen.find(i => i.is_default);
+    const bestellung = bestellungen.find(b => b.id === bestellungId);
+    if (!bestellung) return;
+
+    // 1. Set default Kanzlei, Spedition, Insolventes Unternehmen
+    const defaultKanzlei = kanzleien.find(k => k.is_default);
+    const defaultSpedition = speditionen.find(s => s.is_default);
+    const defaultInsUnternehmen = insolventeUnternehmen.find(i => i.is_default);
+    
+    if (defaultKanzlei) setKanzlei(defaultKanzlei.id);
+    if (defaultSpedition) setSpedition(defaultSpedition.id);
+    if (defaultInsUnternehmen) setInsolventesUnternehmen(defaultInsUnternehmen.id);
+    
+    // 2. Set Kunde
+    setKunde(bestellung.kunde_id);
+    
+    // 3. Match Autos by DEKRA numbers
+    const matchedAutos = autos.filter(auto => 
+      bestellung.dekra_nummern.includes(auto.dekra_bericht_nr || '')
+    );
+    
+    if (matchedAutos.length > 0) {
+      const matchedIds = matchedAutos.map(a => a.id);
       
-      if (defaultKanzlei) setKanzlei(defaultKanzlei.id);
-      if (defaultSpedition) setSpedition(defaultSpedition.id);
-      if (defaultInsUnternehmen) setInsolventesUnternehmen(defaultInsUnternehmen.id);
-      
-      // 2. Set Kunde
-      setKunde(bestellung.kunde_id);
-      
-      // 3. Match Autos by DEKRA numbers
-      const matchedAutos = autos.filter(auto => 
-        bestellung.dekra_nummern.includes(auto.dekra_bericht_nr || '')
-      );
-      
-      if (matchedAutos.length > 0) {
-        const matchedIds = matchedAutos.map(a => a.id);
-        
-        // 4. Set discount if active
-        if (bestellung.rabatt_aktiv && bestellung.rabatt_prozent) {
-          setApplyDiscount(true);
-          setDiscountPercentage(bestellung.rabatt_prozent.toString());
-        }
-        
-        // 5. Determine Kaufvertrag type based on vehicle count and kunde_typ
-        const anzahlFahrzeuge = matchedAutos.length;
-        const istPrivat = bestellung.kunde_typ === 'privat';
-        
-        let kvType = '';
-        if (anzahlFahrzeuge === 1) {
-          kvType = istPrivat ? 'kaufvertrag-1-p' : 'kaufvertrag-1-u';
-          setSelectedAutoId(matchedIds[0]);
-        } else {
-          kvType = istPrivat ? 'kaufvertrag-m-p' : 'kaufvertrag-m-u';
-          setAutoIds(matchedIds);
-        }
-        
-        setKaufvertragType(kvType);
-        
-        // 6. Switch to Kaufvertrag tab
-        setDocumentType('kaufvertrag');
-        
-        toast({
-          title: 'Bestellung geladen',
-          description: `${anzahlFahrzeuge} Fahrzeug(e) wurden automatisch ausgewählt.`,
-        });
-      } else {
-        toast({
-          title: 'Warnung',
-          description: 'Keine passenden Fahrzeuge für die angegebenen DEKRA-Nummern gefunden.',
-          variant: 'destructive',
-        });
+      // 4. Set discount if active
+      if (bestellung.rabatt_aktiv && bestellung.rabatt_prozent) {
+        setApplyDiscount(true);
+        setDiscountPercentage(bestellung.rabatt_prozent.toString());
       }
+      
+      // 5. Determine Kaufvertrag type based on vehicle count and kunde_typ
+      const anzahlFahrzeuge = matchedAutos.length;
+      const istPrivat = bestellung.kunde_typ === 'privat';
+      
+      let kvType = '';
+      if (anzahlFahrzeuge === 1) {
+        kvType = istPrivat ? 'kaufvertrag-1-p' : 'kaufvertrag-1-u';
+        setSelectedAutoId(matchedIds[0]);
+      } else {
+        kvType = istPrivat ? 'kaufvertrag-m-p' : 'kaufvertrag-m-u';
+        setAutoIds(matchedIds);
+      }
+      
+      setKaufvertragType(kvType);
+      
+      // 6. Switch to Kaufvertrag tab
+      setDocumentType('kaufvertrag');
+      
+      // Markiere diese Bestellung als verarbeitet
+      processedBestellungRef.current = bestellungId;
+      
+      toast({
+        title: 'Bestellung geladen',
+        description: `${anzahlFahrzeuge} Fahrzeug(e) wurden automatisch ausgewählt.`,
+      });
+    } else {
+      // Auch bei Fehler markieren, um Endlosschleife zu verhindern
+      processedBestellungRef.current = bestellungId;
+      
+      toast({
+        title: 'Warnung',
+        description: 'Keine passenden Fahrzeuge für die angegebenen DEKRA-Nummern gefunden.',
+        variant: 'destructive',
+      });
     }
   }, [bestellungId, bestellungen, autos, kanzleien, speditionen, insolventeUnternehmen, toast]);
 

@@ -226,11 +226,7 @@ serve(async (req) => {
       
       nettopreis: formatPrice(nettopreis),
       nettopreis_worte: nettopreisInWorten,
-      bruttopreis: formatPrice(bruttopreis),
-      
-      spedition_unternehmen: spedition.name || '',
-      spedition_strasse: spedition.strasse || '',
-      spedition_plzstadt: spedition.plz_stadt || ''
+      bruttopreis: formatPrice(bruttopreis)
     };
 
     console.log('Kaufvertrag JSON data prepared:', jsonData);

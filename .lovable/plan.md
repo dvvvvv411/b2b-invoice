@@ -1,67 +1,48 @@
 
-## Toast-Spam Bug Fix
+## Dokumente Erstellen - Seite verkleinern
 
-### Problem
-Wenn eine Bestellung zum Generator gesendet wird, erscheint die Toast-Benachrichtigung "Fahrzeug(e) zugewiesen" in einer Endlosschleife. Dies liegt an einem fehlerhaften `useEffect` in der Datei `DokumenteErstellen.tsx`.
+Die Seite `/admin/dokumente-erstellen` wird für kleinere Bildschirme optimiert, indem alle Abstände, Schriftgrößen und Komponenten verkleinert werden.
 
-### Ursache
-Der `useEffect` (Zeilen 148-209) wird wiederholt ausgeführt weil:
-1. `toast` ist unnötigerweise in den Dependencies
-2. `kanzleien`, `speditionen`, `insolventeUnternehmen` ändern sich bei jedem Query-Refetch
-3. Es gibt keinen Schutz gegen mehrfaches Ausführen
+### Übersicht der Änderungen
 
-### Lösung
-Ein `useRef` wird verwendet um zu tracken, ob die Bestellung bereits verarbeitet wurde. Der Effect wird nur einmal pro `bestellungId` ausgeführt.
+| Element | Vorher | Nachher |
+|---------|--------|---------|
+| Haupt-Padding | `p-6` | `p-3` |
+| Abstände zwischen Sektionen | `space-y-6` | `space-y-3` |
+| Header-Titel | `text-3xl` | `text-xl` |
+| Icon-Container | `p-3`, `w-6 h-6` | `p-2`, `w-5 h-5` |
+| Card-Header/Content | Standard | Kompakter mit weniger Padding |
+| DEKRA-Input | `h-16`, `text-2xl` | `h-10`, `text-lg` |
+| Fahrzeug-Tabelle | Standard Höhe | Reduzierte ScrollArea-Höhe |
+| Zusammenfassung-Cards | Große Schrift | Kompaktere Darstellung |
 
-### Änderungen
+### Betroffene Datei
 
-**Datei:** `src/pages/admin/DokumenteErstellen.tsx`
-
-1. **Neuen Ref hinzufügen** (nach den anderen State-Definitionen, ca. Zeile 66):
-```typescript
-const processedBestellungRef = useRef<string | null>(null);
-```
-
-2. **Import erweitern** (Zeile 1):
-```typescript
-import { useState, useEffect, useRef } from 'react';
-```
-
-3. **useEffect anpassen** (Zeilen 148-209):
-   - Guard hinzufügen: Wenn `bestellungId` bereits verarbeitet wurde, abbrechen
-   - Nach erfolgreicher Verarbeitung: Ref auf aktuelle `bestellungId` setzen
-   - Dependencies reduzieren auf nur die notwendigen: `bestellungId`, `bestellungen`, `autos`
-   - `toast`, `kanzleien`, `speditionen`, `insolventeUnternehmen` aus Dependencies entfernen
+**`src/pages/admin/DokumenteErstellen.tsx`**
 
 ### Technische Details
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  VORHER (Bug)                                               │
-├─────────────────────────────────────────────────────────────┤
-│  useEffect mit Dependencies:                                │
-│  - bestellungId                                             │
-│  - bestellungen                                             │
-│  - autos                                                    │
-│  - kanzleien        ← Löst Re-Run aus                       │
-│  - speditionen      ← Löst Re-Run aus                       │
-│  - insolventeUnternehmen ← Löst Re-Run aus                  │
-│  - toast            ← Löst Re-Run aus                       │
-│                                                             │
-│  → Toast wird bei jeder Änderung erneut angezeigt!          │
-└─────────────────────────────────────────────────────────────┘
+1. **Container-Padding reduzieren**:
+   - Zeile 662: `p-6 space-y-6` → `p-3 space-y-3 lg:p-6 lg:space-y-6`
 
-┌─────────────────────────────────────────────────────────────┐
-│  NACHHER (Fix)                                              │
-├─────────────────────────────────────────────────────────────┤
-│  useEffect mit:                                             │
-│  - Guard: if (processedBestellungRef.current === id) return │
-│  - Dependencies: [bestellungId, bestellungen, autos]        │
-│  - Nach Erfolg: processedBestellungRef.current = id         │
-│                                                             │
-│  → Toast wird nur EINMAL pro Bestellung angezeigt!          │
-└─────────────────────────────────────────────────────────────┘
-```
+2. **Header verkleinern**:
+   - Titel: `text-3xl` → `text-xl lg:text-3xl`
+   - Icon-Container: `p-3` → `p-2`, Icon: `w-6 h-6` → `w-5 h-5`
+
+3. **Card-Komponenten kompakter machen**:
+   - CardHeader/CardContent mit weniger Padding
+   - Grid-Gaps von `gap-4` auf `gap-3` reduzieren
+
+4. **DEKRA-Eingabefeld verkleinern**:
+   - Von `h-16 text-2xl` auf `h-10 text-lg`
+
+5. **ScrollArea für Fahrzeugliste**:
+   - Höhe von `h-64` auf `h-40` reduzieren
+
+6. **Responsives Design**:
+   - Verwendet `lg:` Prefixes für größere Bildschirme
+   - Kleinere Standardwerte für mobile/kleine Bildschirme
 
 ### Resultat
-Nach der Änderung wird die Toast-Benachrichtigung nur noch einmal angezeigt, wenn eine Bestellung zum Generator weitergeleitet wird.
+
+Nach der Änderung passt die Seite besser auf kleinere Bildschirme. Auf größeren Bildschirmen (lg und größer) wird die ursprüngliche Größe beibehalten.

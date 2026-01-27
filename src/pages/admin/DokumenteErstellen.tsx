@@ -659,17 +659,17 @@ const DokumenteErstellen = () => {
     generateTreuhandvertragDOCXMutation.isPending;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 space-y-3 lg:p-6 lg:space-y-6">
       {/* Header */}
-      <div className="flex items-center space-x-3">
-        <div className="p-3 rounded-lg bg-gradient-to-br from-secondary/20 to-primary/20">
-          <FileText className="w-6 h-6 text-secondary" />
+      <div className="flex items-center space-x-2 lg:space-x-3">
+        <div className="p-2 lg:p-3 rounded-lg bg-gradient-to-br from-secondary/20 to-primary/20">
+          <FileText className="w-5 h-5 lg:w-6 lg:h-6 text-secondary" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-gradient-primary font-orbitron">
+          <h1 className="text-xl lg:text-3xl font-bold text-gradient-primary font-orbitron">
             Dokumente erstellen
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-xs lg:text-sm text-muted-foreground">
             Erstellen Sie Rechnungen und andere Dokumente
           </p>
         </div>
@@ -805,7 +805,7 @@ const DokumenteErstellen = () => {
           )}
         </div>
 
-        <TabsContent value="rechnung" className="mt-6 space-y-6">
+        <TabsContent value="rechnung" className="mt-3 space-y-3 lg:mt-6 lg:space-y-6">
           {/* Invoice/Contract Details */}
           <Card className="glass border-primary/20">
             <CardHeader>
@@ -989,7 +989,7 @@ const DokumenteErstellen = () => {
                         }
                       }}
                       maxLength={10}
-                      className="font-mono text-2xl font-bold w-32 h-16 text-center"
+                      className="font-mono text-lg lg:text-2xl font-bold w-24 lg:w-32 h-10 lg:h-16 text-center"
                     />
                     <Button
                       variant="secondary"
@@ -1008,14 +1008,14 @@ const DokumenteErstellen = () => {
                       placeholder="0993&#10;0212&#10;1135&#10;2519"
                       value={bulkDekraInput}
                       onChange={(e) => setBulkDekraInput(e.target.value)}
-                      className="font-mono text-2xl font-bold w-32 h-40 text-center resize-none"
+                      className="font-mono text-lg lg:text-2xl font-bold w-24 lg:w-32 h-28 lg:h-40 text-center resize-none"
                     />
                     <Button
                       variant="secondary"
                       size="lg"
                       onClick={handleBulkAddByDekra}
                       disabled={!bulkDekraInput.trim()}
-                      className="h-40"
+                      className="h-28 lg:h-40"
                     >
                       <Plus className="w-5 h-5 mr-2" />
                       Hinzufügen
@@ -1040,7 +1040,7 @@ const DokumenteErstellen = () => {
                         </Button>
                       )}
                     </div>
-                    <ScrollArea className="h-[220px] pr-3">
+                    <ScrollArea className="h-[160px] lg:h-[220px] pr-3">
                       <div className="space-y-2">
                         {isSingleVehicleKaufvertrag ? (
                           selectedAuto && (
@@ -1181,7 +1181,7 @@ const DokumenteErstellen = () => {
                   </div>
 
                   {/* List */}
-                  <ScrollArea className="h-[300px] pr-4">
+                  <ScrollArea className="h-[200px] lg:h-[300px] pr-4">
                 {filteredAutos.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     Keine Fahrzeuge gefunden.
@@ -2121,7 +2121,7 @@ const DokumenteErstellen = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="treuhandvertrag" className="mt-6 space-y-6">
+        <TabsContent value="treuhandvertrag" className="mt-3 space-y-3 lg:mt-6 lg:space-y-6">
           {/* Treuhandvertrag Details */}
           <Card className="glass border-primary/20">
             <CardHeader>

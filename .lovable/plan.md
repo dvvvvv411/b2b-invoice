@@ -1,55 +1,67 @@
 
-# Datenbereinigung - Löschplan
+## Toast-Spam Bug Fix
 
-## Übersicht der Löschaktionen
+### Problem
+Wenn eine Bestellung zum Generator gesendet wird, erscheint die Toast-Benachrichtigung "Fahrzeug(e) zugewiesen" in einer Endlosschleife. Dies liegt an einem fehlerhaften `useEffect` in der Datei `DokumenteErstellen.tsx`.
 
-| Tabelle | Aktion | Verbleibende Einträge |
-|---------|--------|----------------------|
-| Bestellungen | ALLE löschen | 0 |
-| Kanzleien | 4 von 5 löschen | 1 (LEGATI) |
-| Speditionen | 7 von 8 löschen | 1 (Ripac Transport GmbH) |
-| Bankkonten | ALLE löschen | 0 |
-| Insolvente Unternehmen | 7 von 8 löschen | 1 (Noris Management GmbH) |
+### Ursache
+Der `useEffect` (Zeilen 148-209) wird wiederholt ausgeführt weil:
+1. `toast` ist unnötigerweise in den Dependencies
+2. `kanzleien`, `speditionen`, `insolventeUnternehmen` ändern sich bei jedem Query-Refetch
+3. Es gibt keinen Schutz gegen mehrfaches Ausführen
 
-## SQL-Befehle (werden ausgeführt)
+### Lösung
+Ein `useRef` wird verwendet um zu tracken, ob die Bestellung bereits verarbeitet wurde. Der Effect wird nur einmal pro `bestellungId` ausgeführt.
 
-### 1. Alle Bestellungen löschen
-```sql
-DELETE FROM bestellungen;
+### Änderungen
+
+**Datei:** `src/pages/admin/DokumenteErstellen.tsx`
+
+1. **Neuen Ref hinzufügen** (nach den anderen State-Definitionen, ca. Zeile 66):
+```typescript
+const processedBestellungRef = useRef<string | null>(null);
 ```
 
-### 2. Kanzleien löschen (außer LEGATI)
-```sql
-DELETE FROM anwaltskanzleien 
-WHERE name != 'LEGATI Rechtsanwalt - Steuerberater - Wirtschaftsprüfer Polat und Weismann Partnerschaft';
+2. **Import erweitern** (Zeile 1):
+```typescript
+import { useState, useEffect, useRef } from 'react';
 ```
 
-### 3. Speditionen löschen (außer Ripac Transport GmbH)
-```sql
-DELETE FROM speditionen 
-WHERE name != 'Ripac Transport GmbH';
+3. **useEffect anpassen** (Zeilen 148-209):
+   - Guard hinzufügen: Wenn `bestellungId` bereits verarbeitet wurde, abbrechen
+   - Nach erfolgreicher Verarbeitung: Ref auf aktuelle `bestellungId` setzen
+   - Dependencies reduzieren auf nur die notwendigen: `bestellungId`, `bestellungen`, `autos`
+   - `toast`, `kanzleien`, `speditionen`, `insolventeUnternehmen` aus Dependencies entfernen
+
+### Technische Details
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  VORHER (Bug)                                               │
+├─────────────────────────────────────────────────────────────┤
+│  useEffect mit Dependencies:                                │
+│  - bestellungId                                             │
+│  - bestellungen                                             │
+│  - autos                                                    │
+│  - kanzleien        ← Löst Re-Run aus                       │
+│  - speditionen      ← Löst Re-Run aus                       │
+│  - insolventeUnternehmen ← Löst Re-Run aus                  │
+│  - toast            ← Löst Re-Run aus                       │
+│                                                             │
+│  → Toast wird bei jeder Änderung erneut angezeigt!          │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│  NACHHER (Fix)                                              │
+├─────────────────────────────────────────────────────────────┤
+│  useEffect mit:                                             │
+│  - Guard: if (processedBestellungRef.current === id) return │
+│  - Dependencies: [bestellungId, bestellungen, autos]        │
+│  - Nach Erfolg: processedBestellungRef.current = id         │
+│                                                             │
+│  → Toast wird nur EINMAL pro Bestellung angezeigt!          │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 4. Alle Bankkonten löschen
-```sql
-DELETE FROM bankkonten;
-```
-
-### 5. Insolvente Unternehmen löschen (außer Noris Management GmbH)
-```sql
-DELETE FROM insolvente_unternehmen 
-WHERE name != 'Noris Management GmbH';
-```
-
-## Wichtige Hinweise
-
-- Diese Löschungen sind **unwiderruflich**
-- Bestellungen werden komplett gelöscht (alle ~50+ Einträge)
-- Alle Bankkonten werden gelöscht (~43 Einträge)
-- Die jeweils zu behaltenden Einträge (LEGATI, Ripac Transport, Noris Management) bleiben erhalten
-
-## Technische Details
-
-Die Löschungen werden über das Supabase Insert-Tool ausgeführt, da dieses Tool für DELETE-Operationen verwendet werden muss (nicht die Migration).
-
-Nach der Ausführung werden die Query-Caches invalidiert, sodass die UI automatisch aktualisiert wird.
+### Resultat
+Nach der Änderung wird die Toast-Benachrichtigung nur noch einmal angezeigt, wenn eine Bestellung zum Generator weitergeleitet wird.

@@ -1,33 +1,55 @@
 
-## Spedition-Felder aus Kaufvertrag entfernen
+# Datenbereinigung - Löschplan
 
-Die Spedition-Informationen (`spedition_unternehmen`, `spedition_strasse`, `spedition_plzstadt`) sollen nicht mehr an Docmosis gesendet werden.
+## Übersicht der Löschaktionen
 
-### Betroffene Dateien
+| Tabelle | Aktion | Verbleibende Einträge |
+|---------|--------|----------------------|
+| Bestellungen | ALLE löschen | 0 |
+| Kanzleien | 4 von 5 löschen | 1 (LEGATI) |
+| Speditionen | 7 von 8 löschen | 1 (Ripac Transport GmbH) |
+| Bankkonten | ALLE löschen | 0 |
+| Insolvente Unternehmen | 7 von 8 löschen | 1 (Noris Management GmbH) |
 
-1. **`supabase/functions/generate-kaufvertrag-pdf/index.ts`**
-2. **`supabase/functions/generate-kaufvertrag-docx/index.ts`**
+## SQL-Befehle (werden ausgeführt)
 
-### Änderungen
-
-In beiden Dateien werden die folgenden drei Zeilen aus dem `jsonData`-Objekt entfernt:
-
-**Zeilen 231-233:**
-```typescript
-spedition_unternehmen: spedition.name || '',
-spedition_strasse: spedition.strasse || '',
-spedition_plzstadt: spedition.plz_stadt || ''
+### 1. Alle Bestellungen löschen
+```sql
+DELETE FROM bestellungen;
 ```
 
-### Technische Details
+### 2. Kanzleien löschen (außer LEGATI)
+```sql
+DELETE FROM anwaltskanzleien 
+WHERE name != 'LEGATI Rechtsanwalt - Steuerberater - Wirtschaftsprüfer Polat und Weismann Partnerschaft';
+```
 
-Die Spedition wird weiterhin aus der Datenbank geladen (da sie eventuell für andere Zwecke benötigt wird oder als Pflichtfeld im Request erwartet wird), aber die Daten werden einfach nicht mehr an Docmosis weitergegeben.
+### 3. Speditionen löschen (außer Ripac Transport GmbH)
+```sql
+DELETE FROM speditionen 
+WHERE name != 'Ripac Transport GmbH';
+```
 
-Das bedeutet:
-- Die Platzhalter `<<spedition_unternehmen>>`, `<<spedition_strasse>>`, `<<spedition_plzstadt>>` im Docmosis-Template bleiben leer
-- Falls das Template diese Platzhalter noch enthält, werden sie durch leere Strings ersetzt
-- Optional kannst du die Platzhalter auch direkt aus dem Docmosis-Template entfernen
+### 4. Alle Bankkonten löschen
+```sql
+DELETE FROM bankkonten;
+```
 
-### Resultat
+### 5. Insolvente Unternehmen löschen (außer Noris Management GmbH)
+```sql
+DELETE FROM insolvente_unternehmen 
+WHERE name != 'Noris Management GmbH';
+```
 
-Nach der Änderung werden keine Spedition-Daten mehr im generierten Kaufvertrag erscheinen.
+## Wichtige Hinweise
+
+- Diese Löschungen sind **unwiderruflich**
+- Bestellungen werden komplett gelöscht (alle ~50+ Einträge)
+- Alle Bankkonten werden gelöscht (~43 Einträge)
+- Die jeweils zu behaltenden Einträge (LEGATI, Ripac Transport, Noris Management) bleiben erhalten
+
+## Technische Details
+
+Die Löschungen werden über das Supabase Insert-Tool ausgeführt, da dieses Tool für DELETE-Operationen verwendet werden muss (nicht die Migration).
+
+Nach der Ausführung werden die Query-Caches invalidiert, sodass die UI automatisch aktualisiert wird.

@@ -111,20 +111,20 @@ const Dashboard = () => {
   return (
     <div className="p-6 space-y-8">
       {/* Welcome Header */}
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-gradient-primary font-orbitron">
+      <div className="space-y-2">
+        <h1 className="text-2xl lg:text-3xl font-semibold text-foreground">
           Willkommen im Admin Panel
         </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-muted-foreground">
           Verwalten Sie Ihre Daten effizient und übersichtlich.
         </p>
       </div>
 
       {/* Statistics Grid */}
       <div>
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5 text-primary" />
-          <h2 className="text-2xl font-semibold text-gradient-secondary">Statistiken</h2>
+          <h2 className="text-lg font-semibold text-foreground">Statistiken</h2>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -156,9 +156,9 @@ const Dashboard = () => {
 
       {/* Quick Actions */}
       <div>
-        <div className="flex items-center gap-2 mb-6">
-          <Plus className="w-5 h-5 text-secondary" />
-          <h2 className="text-2xl font-semibold text-gradient-primary">Quick Actions</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <Plus className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-semibold text-foreground">Quick Actions</h2>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -32,7 +32,7 @@ const InsolventeUnternehmen = () => {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gradient-primary font-orbitron">Insolvente Unternehmen</h1>
+          <h1 className="text-2xl lg:text-3xl font-semibold text-foreground">Insolvente Unternehmen</h1>
           <p className="text-muted-foreground">Verwalten Sie insolvente Unternehmen</p>
         </div>
         <Button variant="gaming" onClick={handleCreate}>

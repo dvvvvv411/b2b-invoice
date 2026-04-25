@@ -32,7 +32,7 @@ const Bankkonten = () => {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gradient-primary font-orbitron">Bankkonten</h1>
+          <h1 className="text-2xl lg:text-3xl font-semibold text-foreground">Bankkonten</h1>
           <p className="text-muted-foreground">Verwalten Sie Ihre Bankverbindungen</p>
         </div>
         <Button variant="gaming" onClick={handleCreate}>

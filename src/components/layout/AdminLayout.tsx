@@ -32,13 +32,11 @@ export function AdminLayout() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background relative">
-        {/* Gaming background effects */}
-        <div className="absolute inset-0 grid-bg opacity-20"></div>
+      <div className="h-screen flex w-full bg-background">
         <AdminSidebar />
-        <div className="flex-1 flex flex-col relative z-10">
+        <div className="flex-1 flex flex-col overflow-hidden">
           <AdminHeader />
-          <main className="flex-1 overflow-auto bg-background">
+          <main className="flex-1 overflow-auto bg-muted/30">
             <Outlet />
           </main>
         </div>

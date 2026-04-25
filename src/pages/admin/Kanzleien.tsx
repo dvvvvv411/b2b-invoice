@@ -63,7 +63,7 @@ const Kanzleien = () => {
             <Building2 className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gradient-primary font-orbitron">
+            <h1 className="text-2xl lg:text-3xl font-semibold text-foreground">
               Kanzleien
             </h1>
             <p className="text-muted-foreground">

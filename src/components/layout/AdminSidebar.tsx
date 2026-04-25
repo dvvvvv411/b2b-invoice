@@ -48,15 +48,15 @@ export function AdminSidebar() {
   };
 
   const getNavClass = (path: string) =>
-    isActive(path) 
-      ? 'bg-gradient-to-r from-primary/20 to-primary-glow/20 text-primary border border-primary/30 neon-glow-green' 
-      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:neon-glow-green';
+    isActive(path)
+      ? 'bg-accent text-accent-foreground font-medium border-l-2 border-primary'
+      : 'text-muted-foreground hover:bg-muted hover:text-foreground border-l-2 border-transparent';
 
   return (
-    <Sidebar className="border-r border-border/20 bg-background">
-      <SidebarContent className="bg-background">
+    <Sidebar className="border-r border-border bg-card">
+      <SidebarContent className="bg-card">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-foreground/70 font-semibold text-lg mb-4 px-3">
+          <SidebarGroupLabel className="text-muted-foreground font-medium text-xs uppercase tracking-wider mb-2 px-3">
             Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Gamepad2, Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import { Building2, Mail, Lock, User, ArrowLeft } from 'lucide-react';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -69,11 +69,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-background flex items-center justify-center">
-      {/* Animated Grid Background */}
-      <div className="absolute inset-0 grid-bg opacity-30"></div>
-      
-      {/* Back to Home Button */}
+    <div className="min-h-screen bg-gradient-hero flex items-center justify-center px-4">
       <Button
         variant="ghost"
         className="absolute top-6 left-6 z-20"
@@ -83,22 +79,19 @@ const Auth = () => {
         Zurück
       </Button>
 
-      {/* Auth Card */}
-      <div className="relative z-10 w-full max-w-md mx-6">
-        <Card className="glass p-8 border-primary/20">
+      <div className="w-full max-w-md">
+        <Card className="p-8 shadow-elevated border-border">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-4">
-              <Gamepad2 className="w-5 h-5 text-primary" />
-              <span className="text-sm font-medium">B2B Panel</span>
+            <div className="inline-flex items-center gap-2 bg-accent text-accent-foreground rounded-full px-4 py-1.5 mb-4">
+              <Building2 className="w-4 h-4" />
+              <span className="text-xs font-medium">B2B Panel</span>
             </div>
-            
-            <h1 className="text-3xl font-bold font-orbitron mb-2">
-              <span className="text-gradient-primary">
-                {isLogin ? 'Anmelden' : 'Registrieren'}
-              </span>
+
+            <h1 className="text-2xl font-semibold text-foreground mb-2">
+              {isLogin ? 'Anmelden' : 'Registrieren'}
             </h1>
-            
-            <p className="text-muted-foreground">
+
+            <p className="text-sm text-muted-foreground">
               {isLogin 
                 ? 'Willkommen zurück! Melden Sie sich an, um fortzufahren.'
                 : 'Erstellen Sie Ihr Konto und starten Sie durch.'
@@ -139,15 +132,16 @@ const Auth = () => {
 
             <Button
               type="submit"
-              variant="gaming"
-              className="w-full text-lg py-6"
+              variant="default"
+              className="w-full"
+              size="lg"
               disabled={loading}
             >
               {loading ? (
                 "Wird geladen..."
               ) : (
                 <>
-                  <User className="w-5 h-5 mr-2" />
+                  <User className="w-4 h-4 mr-2" />
                   {isLogin ? 'Anmelden' : 'Registrieren'}
                 </>
               )}
@@ -158,7 +152,7 @@ const Auth = () => {
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-primary hover:text-primary-glow transition-colors"
+              className="text-sm text-primary hover:underline"
             >
               {isLogin 
                 ? 'Noch kein Konto? Jetzt registrieren'

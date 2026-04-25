@@ -14,28 +14,28 @@ export function AdminHeader() {
   };
 
   return (
-    <header className="h-16 bg-background border-b border-border/20 flex items-center justify-between px-6">
+    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 shadow-soft">
       <div className="flex items-center space-x-4">
-        <SidebarTrigger className="text-foreground/70 hover:text-foreground" />
+        <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center neon-glow-green">
-            <span className="text-background font-bold text-sm">PDF</span>
+          <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center shadow-soft">
+            <span className="text-primary-foreground font-semibold text-sm tracking-wide">PDF</span>
           </div>
-          <h1 className="text-xl font-bold text-foreground font-orbitron">PDF Generator Panel</h1>
+          <h1 className="text-lg font-semibold text-foreground">PDF Generator Panel</h1>
         </div>
       </div>
 
       <div className="flex items-center space-x-3">
-        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+        <div className="hidden sm:flex items-center space-x-2 text-sm text-muted-foreground">
           <User className="w-4 h-4" />
           <span>{user?.email}</span>
         </div>
-        
-        <Button variant="ghost" size="sm" className="hover:neon-glow-green">
+
+        <Button variant="ghost" size="sm">
           <Settings className="w-4 h-4" />
         </Button>
-        
-        <Button variant="gaming" size="sm" onClick={handleSignOut}>
+
+        <Button variant="outline" size="sm" onClick={handleSignOut}>
           <LogOut className="w-4 h-4 mr-2" />
           Abmelden
         </Button>

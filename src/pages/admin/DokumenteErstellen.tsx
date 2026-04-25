@@ -666,7 +666,7 @@ const DokumenteErstellen = () => {
           <FileText className="w-5 h-5 lg:w-6 lg:h-6 text-secondary" />
         </div>
         <div>
-          <h1 className="text-xl lg:text-3xl font-bold text-gradient-primary font-orbitron">
+          <h1 className="text-xl lg:text-2xl lg:text-3xl font-semibold text-foreground">
             Dokumente erstellen
           </h1>
           <p className="text-xs lg:text-sm text-muted-foreground">

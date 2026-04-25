@@ -74,8 +74,12 @@ export default {
 				}
 			},
 			fontFamily: {
-				'orbitron': ['Orbitron', 'sans-serif'],
+				'orbitron': ['Inter', 'system-ui', 'sans-serif'],
 				'sans': ['Inter', 'system-ui', 'sans-serif'],
+			},
+			boxShadow: {
+				soft: '0 1px 2px 0 hsl(222 47% 11% / 0.04), 0 1px 3px 0 hsl(222 47% 11% / 0.06)',
+				elevated: '0 4px 6px -1px hsl(222 47% 11% / 0.06), 0 10px 15px -3px hsl(222 47% 11% / 0.08)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
